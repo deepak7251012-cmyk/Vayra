@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vayra - My Personal Assistant</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #000;
+            color: #fff;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        h1 {
+            font-size: 1.8em;
+            color: #58a6ff;
+            margin-bottom: 10px;
+            letter-spacing: 3px;
+        }
+        #face-container {
+            position: relative;
+            width: 220px;
+            height: 220px;
+            margin: 10px 0;
+        }
+        #face {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: radial-gradient(circle, #1f6feb, #0d1117 70%);
+            box-shadow: 0 0 40px #1f6feb, 0 0 80px #1f6feb inset;
+            animation: pulse 2s infinite alternate;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 30px #1f6feb; }
+            100% { transform: scale(1.05); box-shadow: 0 0 60px #58a6ff; }
+        }
+        #status {
+            font-size: 0.9em;
+            color: #8b949e;
+            margin: 5px 0;
+            height: 20px;
+        }
+        #chat-box {
+            width: 90%;
+            max-width: 400px;
+            height: 180px;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 10px;
+            overflow-y: auto;
+            background: #161b22;
+            margin: 10px 0;
+            font-size: 0.95em;
+        }
+        .msg { margin: 5px 0; padding: 8px 12px; border-radius: 10px; max-width: 80%; }
+        .user { background: #1f6feb; text-align: right; margin-left: auto; }
+        .bot { background: #21262d; text-align: left; }
+        .input-row {
+            display: flex;
+            width: 90%;
+            max-width: 400px;
+            gap: 8px;
+        }
+        input {
+            flex: 1;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid #30363d;
+            background: #0d1117;
+            color: #fff;
+            font-size: 0.95em;
+        }
+        button {
+            padding: 12px 18px;
+            border-radius: 10px;
+            border: none;
+            background: #238636;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:active { background: #2ea043; }
+        #mic-btn {
+            background: #da3633;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <h1>VAYRA</h1>
+    <div id="face-container">
+        <div id="face"></div>
+    </div>
+    <div id="status">सुन रही हूँ...</div>
+
+    <div id="chat-box">
+        <div class="msg bot">नमस्ते दोस्त! मैं Vayra हूँ। बोलो या लिखो, क्या करना है?</div>
+    </div>
+
+    <div class="input-row">
+        <input type="text" id="user-input" placeholder="यहाँ लिखो...">
+        <button onclick="sendMessage()">भेजो</button>
+        <button id="mic-btn" onclick="startVoice()">🎤</button>
+    </div>
+
+    <script>
+        const chatBox = document.getElementById('chat-box');
+        const statusDiv = document.getElementById('status');
+        const face = document.getElementById('face');
+
+        function addMessage(text, sender) {
+            const div = document.createElement('div');
+            div.className = 'msg ' + sender;
+            div.textContent = text;
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('user-input');
+            const text = input.value.trim();
+            if (!text) return;
+            addMessage(text, 'user');
+            input.value = '';
+            statusDiv.textContent = 'सोच रही हूँ...';
+            face.style.animation = 'pulse 0.5s infinite alternate';
+            setTimeout(() => {
+                addMessage('ठीक है दोस्त, मैं सीख रही हूँ!', 'bot');
+                statusDiv.textContent = 'सुन रही हूँ...';
+                face.style.animation = 'pulse 2s infinite alternate';
+            }, 1000);
+        }
+
+        function startVoice() {
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                addMessage('Voice support नहीं है इस ब्राउज़र में', 'bot');
+                return;
+            }
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'hi-IN';
+            recognition.start();
+            statusDiv.textContent = 'सुन रही हूँ...';
+            recognition.onresult = function(event) {
+                const text = event.results[0][0].transcript;
+                addMessage(text, 'user');
+                statusDiv.textContent = 'सोच रही हूँ...';
+                setTimeout(() => {
+                    addMessage('तुमने कहा: ' + text, 'bot');
+                    statusDiv.textContent = 'सुन रही हूँ...';
+                }, 800);
+            };
+            recognition.onerror = function() {
+                statusDiv.textContent = 'फिर से कोशिश करो...';
+            };
+        }
+
+        document.getElementById('user-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') sendMessage();
+        });
+    </script>
+</body>
+</html>
