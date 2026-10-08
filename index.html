@@ -607,4 +607,71 @@
             currentColor = color;
             particles.forEach(p => { if (p.color !== '#8a2be2') p.color = color; });
             ringParticles.forEach(p => p.color = color);
-            document.querySelector('.header h1').textContent
+            document.querySelector('.header h1').textContent = name.toUpperCase();
+            toast('Settings saved! ✨');
+            closeModal('settingsModal');
+        }
+
+        // ============ CODE EDITOR ============
+        function runCode() {
+            const code = document.getElementById('codeArea').value;
+            try {
+                eval(code);
+                toast('Code chal gaya!');
+            } catch (e) {
+                toast('Error: ' + e.message);
+            }
+        }
+
+        // ============ DESIGN ============
+        function generateDesign() {
+            const prompt = document.getElementById('designInput').value;
+            if (!prompt) return;
+            document.getElementById('designCanvas').innerHTML = `<p style="color:#00ffff;">✦ "${prompt}" ban raha hai...</p><p style="color:#8b949e; font-size:12px; margin-top:10px;">(AI image generation jald aayega)</p>`;
+            toast('Design ban raha hai...');
+        }
+
+        // ============ BOTTOM BAR ============
+        function backupData() {
+            const data = { memory: localStorage.getItem('vayra_memory'), settings: { name: localStorage.getItem('vayra_name'), color: localStorage.getItem('vayra_color'), voice: localStorage.getItem('vayra_voice') } };
+            localStorage.setItem('vayra_backup', JSON.stringify(data));
+            toast('Backup ho gaya! ☁️');
+        }
+        function showHistory() { toast('History khali hai...'); }
+        function showHelp() {
+            document.getElementById('infoTitle').textContent = 'HELP';
+            document.getElementById('infoContent').innerHTML = '<p style="color:#fff; line-height:1.8;">🎤 बोलने के लिए माइक दबाओ<br>💬 लिखने के लिए चैट बॉक्स<br>⚙️ सेटिंग्स में API Key, रंग, नाम बदलो<br>🧠 मेमोरी में याददाश्त देखो<br></p>';
+            openModal('infoModal');
+        }
+        function changeTheme() { document.body.style.background = document.body.style.background === 'rgb(0, 0, 0)' ? '#0a0a2a' : '#000'; toast('Theme badal gayi! 🌙'); }
+        function changeColor() {
+            const colors = ['#00ffff', '#8a2be2', '#ff4444', '#00ff88', '#ffaa00'];
+            currentColor = colors[Math.floor(Math.random() * colors.length)];
+            particles.forEach(p => { if (p.color !== '#8a2be2') p.color = currentColor; });
+            ringParticles.forEach(p => p.color = currentColor);
+            toast('Color badal gaya! 🎨');
+        }
+        function toggleSound() { toast('Sound toggle (demo) 🔊'); }
+
+        // ============ TOAST ============
+        function toast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
+
+        // Load saved settings
+        window.addEventListener('load', () => {
+            const name = localStorage.getItem('vayra_name');
+            const color = localStorage.getItem('vayra_color');
+            if (name) document.querySelector('.header h1').textContent = name.toUpperCase();
+            if (color) {
+                currentColor = color;
+                particles.forEach(p => { if (p.color !== '#8a2be2') p.color = color; });
+                ringParticles.forEach(p => p.color = color);
+            }
+        });
+    </script>
+</body>
+</html>
