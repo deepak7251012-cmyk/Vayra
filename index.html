@@ -225,6 +225,15 @@
             color: #fff; cursor: pointer;
         }
         .app-item .icon { font-size: 24px; margin-bottom: 5px; }
+        /* Eye button for password */
+        .password-wrap { position: relative; width: 100%; }
+        .password-wrap input { padding-right: 45px; }
+        .eye-btn {
+            position: absolute; right: 10px; top: 50%;
+            transform: translateY(-50%);
+            background: none; border: none; color: #00ffff;
+            font-size: 18px; cursor: pointer; padding: 5px;
+        }
     </style>
 </head>
 <body>
@@ -297,8 +306,11 @@
         <div class="modal-header"><h2>SETTINGS</h2><button class="close-btn" onclick="closeModal('settingsModal')">✕</button></div>
         <div class="modal-content">
             <div class="settings-item">
-                <label>🔑 Gemini API Key</label>
-                <input type="password" id="settingApiKey" placeholder="AIza... apni key yahan daalo">
+                <label>🔑 OpenRouter API Key</label>
+                <div class="password-wrap">
+                    <input type="password" id="settingApiKey" placeholder="sk-or-v1-... apni key yahan daalo">
+                    <button class="eye-btn" type="button" onclick="toggleKeyVisibility()">👁️</button>
+                </div>
             </div>
             <div class="settings-item">
                 <label>👤 Naam</label>
@@ -342,9 +354,10 @@
     <div class="toast" id="toast"></div>
 
     <script>
-        // ============ GEMINI API ============
-        let GEMINI_API_KEY = localStorage.getItem('vayra_api_key') || "";
-        const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=";
+        // ============ OPENROUTER API ============
+        let OPENROUTER_API_KEY = localStorage.getItem('vayra_api_key') || "";
+        const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+        const MODEL = "meta-llama/llama-3.3-70b-instruct:free";
 
         // ============ VAYRA ORB ============
         const canvas = document.getElementById('orbCanvas');
@@ -449,9 +462,7 @@
             });
         }
 
-        // ============ AI CHAT (GEMINI) ============
-        let chatHistory = [];
-
+        // ============ AI CHAT (OPENROUTER) ============
         async function sendMessage() {
             const input = document.getElementById('chatInput');
             const text = input.value.trim();
@@ -459,30 +470,33 @@
             input.value = '';
             toast('Vayra soch rahi hai...');
 
-            if (!GEMINI_API_KEY) {
+            if (!OPENROUTER_API_KEY) {
                 toast('Pehle Settings mein API Key daalo!');
                 openModal('settingsModal');
                 return;
             }
 
             try {
-                const prompt = 'You are Vayra — a warm, caring, playful personal AI assistant. Talk in simple Hindi/Hinglish like a close friend. Be affectionate and helpful. Keep replies short (1-3 sentences). User says: ' + text;
-                
-                const response = await fetch(GEMINI_URL + GEMINI_API_KEY, {
+                const response = await fetch(OPENROUTER_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + OPENROUTER_API_KEY
+                    },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }]
+                        model: MODEL,
+                        messages: [
+                            { role: 'system', content: 'You are Vayra — a warm, caring, playful personal AI assistant. Talk in simple Hindi/Hinglish like a close friend. Be affectionate and helpful. Keep replies short (1-3 sentences).' },
+                            { role: 'user', content: text }
+                        ]
                     })
                 });
                 const data = await response.json();
-                
-                if (!data.candidates || !data.candidates[0]) {
-                    toast('Gemini Error: ' + (data.error?.message || 'Unknown'));
+                if (!data.choices || !data.choices[0]) {
+                    toast('API Error: ' + (data.error?.message || 'Unknown'));
                     return;
                 }
-                
-                const reply = data.candidates[0].content.parts[0].text;
+                const reply = data.choices[0].message.content;
                 toast('Vayra: ' + reply);
                 speak(reply);
             } catch (err) {
@@ -520,13 +534,22 @@
         // ============ MODALS ============
         function openModal(id) { 
             if (id === 'settingsModal') {
-                document.getElementById('settingApiKey').value = GEMINI_API_KEY;
+                document.getElementById('settingApiKey').value = OPENROUTER_API_KEY;
             }
             document.getElementById(id).classList.add('active'); 
         }
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
         function focusChat() { document.getElementById('chatInput').focus(); }
+
+        function toggleKeyVisibility() {
+            const inp = document.getElementById('settingApiKey');
+            if (inp.type === 'password') {
+                inp.type = 'text';
+            } else {
+                inp.type = 'password';
+            }
+        }
 
         function showMemory() {
             const mem = JSON.parse(localStorage.getItem('vayra_memory') || '[]');
@@ -575,7 +598,7 @@
             
             if (key) {
                 localStorage.setItem('vayra_api_key', key);
-                GEMINI_API_KEY = key;
+                OPENROUTER_API_KEY = key;
             }
             localStorage.setItem('vayra_name', name);
             localStorage.setItem('vayra_color', color);
@@ -609,7 +632,7 @@
         function showHistory() { toast('History khali hai...'); }
         function showHelp() {
             document.getElementById('infoTitle').textContent = 'HELP';
-            document.getElementById('infoContent').innerHTML = '<p style="color:#fff; line-height:1.8;">🎤 बोलने के लिए माइक दबाओ<br>💬 लिखने के लिए चैट बॉक्स<br>⚙️ सेटिंग्स में API Key, रंग, नाम बदलो<br>🧠 मेमोरी में याददाश्त देखो<br></p>';
+            document.getElementById('infoContent').innerHTML = '<p style="color:#fff; line-height:1.8;">🎤 बोलने के लिए माइक दबाओ<br>💬 लिखने के लिए चैट बॉक्स<br>⚙️ सेटिंग्स में API Key, रंग, नाम बदलो<br>🧠 मेमोरी में याददाश्त देखो<br>👁️ Key देखने के लिए आँख दबाओ<br></p>';
             openModal('infoModal');
         }
         function changeTheme() { document.body.style.background = document.body.style.background === 'rgb(0, 0, 0)' ? '#0a0a2a' : '#000'; toast('Theme badal gayi! 🌙'); }
