@@ -225,7 +225,6 @@
             color: #fff; cursor: pointer;
         }
         .app-item .icon { font-size: 24px; margin-bottom: 5px; }
-        /* Eye button for password */
         .password-wrap { position: relative; width: 100%; }
         .password-wrap input { padding-right: 45px; }
         .eye-btn {
@@ -357,7 +356,7 @@
         // ============ OPENROUTER API ============
         let OPENROUTER_API_KEY = localStorage.getItem('vayra_api_key') || "";
         const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-        const MODEL = "meta-llama/llama-3.3-70b-instruct:free";
+        const MODEL = "meta-llama/llama-3.3-70b-instruct";
 
         // ============ VAYRA ORB ============
         const canvas = document.getElementById('orbCanvas');
