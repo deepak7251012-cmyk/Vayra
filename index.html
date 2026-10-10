@@ -1,769 +1,230 @@
 <!DOCTYPE html>
 <html lang="hi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VAYRA - Your Personal AI Assistant</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body {
-            background: #000; color: #fff;
-            font-family: 'Segoe UI', Arial, sans-serif;
-            min-height: 100vh; overflow-x: hidden;
-            padding: 10px; padding-bottom: 70px;
-        }
-        body::before {
-            content: ''; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-image: 
-                linear-gradient(rgba(0, 255, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 255, 255, 0.03) 1px, transparent 1px);
-            background-size: 30px 30px; pointer-events: none; z-index: 0;
-        }
-        .container { position: relative; z-index: 1; }
-        .top-cards { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
-        .card {
-            background: rgba(0, 20, 30, 0.8);
-            border: 1px solid rgba(0, 255, 255, 0.3);
-            border-radius: 10px; padding: 6px 10px;
-            font-size: 11px; box-shadow: 0 0 10px rgba(0, 255, 255, 0.1);
-        }
-        .card .label { color: #00ffff; font-size: 9px; letter-spacing: 1px; }
-        .card .value { color: #fff; font-weight: bold; font-size: 13px; }
-        .header { text-align: center; margin: 5px 0 15px; }
-        .header h1 {
-            font-size: 2.2em; color: #00ffff; letter-spacing: 8px;
-            text-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff; font-weight: 900;
-        }
-        .header p { font-size: 0.7em; color: #8b949e; letter-spacing: 2px; margin-top: 3px; }
-        .orb-container { position: relative; width: 260px; height: 260px; margin: 0 auto 15px; }
-        #orbCanvas {
-            width: 100%; height: 100%; border-radius: 50%;
-            box-shadow: 0 0 60px rgba(0, 255, 255, 0.5), 0 0 120px rgba(138, 43, 226, 0.3);
-        }
-        .side-btn {
-            position: absolute; width: 45px; height: 45px; border-radius: 50%;
-            background: rgba(0, 20, 30, 0.9);
-            border: 2px solid rgba(0, 255, 255, 0.5);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 18px; color: #00ffff; cursor: pointer;
-            box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
-            transition: all 0.3s;
-        }
-        .side-btn:active { transform: scale(0.9); background: rgba(0, 255, 255, 0.2); }
-        .btn-settings { top: 0; left: calc(50% - 150px); }
-        .btn-code { top: 0; right: calc(50% - 150px); }
-        .btn-chat { top: 80px; left: calc(50% - 145px); }
-        .btn-work { top: 150px; left: calc(50% - 150px); }
-        .btn-memory { top: 220px; left: calc(50% - 145px); }
-        .btn-reminder { top: 80px; right: calc(50% - 145px); }
-        .btn-record { top: 150px; right: calc(50% - 150px); }
-        .btn-apps { top: 220px; right: calc(50% - 145px); }
-        .side-btn .label {
-            position: absolute; bottom: -18px; font-size: 9px;
-            color: #8b949e; white-space: nowrap; letter-spacing: 0.5px;
-        }
-        .design-screen {
-            background: rgba(0, 15, 25, 0.9);
-            border: 2px solid rgba(0, 255, 255, 0.4);
-            border-radius: 15px; padding: 10px; margin: 10px 0;
-            cursor: pointer; box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
-            transition: all 0.3s; position: relative; overflow: hidden;
-            min-height: 80px; display: flex; align-items: center; justify-content: center;
-        }
-        .design-screen:active { transform: scale(0.98); }
-        .design-screen .placeholder {
-            color: #00ffff; font-size: 14px; text-align: center; letter-spacing: 1px;
-        }
-        .design-screen .placeholder span { font-size: 20px; display: block; margin-bottom: 5px; }
-        .status-row { display: flex; gap: 8px; margin: 10px 0; }
-        .status-card {
-            flex: 1; background: rgba(0, 20, 30, 0.8);
-            border: 1px solid rgba(0, 255, 255, 0.3);
-            border-radius: 10px; padding: 8px; text-align: center;
-            font-size: 10px; color: #8b949e;
-        }
-        .status-card .wave {
-            display: flex; justify-content: center; align-items: center;
-            gap: 2px; height: 20px; margin-top: 4px;
-        }
-        .status-card .wave span {
-            width: 3px; background: #00ffff; border-radius: 2px;
-            animation: wave 1s infinite ease-in-out;
-        }
-        .status-card .wave span:nth-child(1) { height: 8px; animation-delay: 0s; }
-        .status-card .wave span:nth-child(2) { height: 14px; animation-delay: 0.1s; }
-        .status-card .wave span:nth-child(3) { height: 18px; animation-delay: 0.2s; }
-        .status-card .wave span:nth-child(4) { height: 14px; animation-delay: 0.3s; }
-        .status-card .wave span:nth-child(5) { height: 8px; animation-delay: 0.4s; }
-        @keyframes wave { 0%, 100% { transform: scaleY(0.5); } 50% { transform: scaleY(1); } }
-        .chat-box {
-            display: flex; align-items: center; gap: 8px;
-            background: rgba(0, 20, 30, 0.8);
-            border: 1px solid rgba(0, 255, 255, 0.3);
-            border-radius: 25px; padding: 10px 15px; margin: 10px 0;
-        }
-        .chat-box input {
-            flex: 1; background: transparent; border: none;
-            color: #fff; font-size: 14px; outline: none;
-        }
-        .chat-box input::placeholder { color: #8b949e; }
-        .mic-btn {
-            width: 45px; height: 45px; border-radius: 50%;
-            background: rgba(0, 255, 255, 0.15);
-            border: 2px solid #00ffff; color: #00ffff;
-            font-size: 20px; display: flex; align-items: center;
-            justify-content: center; cursor: pointer;
-            box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
-            transition: all 0.3s;
-        }
-        .mic-btn:active { transform: scale(0.9); background: #00ffff; color: #000; }
-        .chat-hint { text-align: center; font-size: 11px; color: #8b949e; margin-bottom: 15px; }
-        .bottom-bar {
-            display: flex; justify-content: space-around; align-items: center;
-            background: rgba(0, 15, 25, 0.95);
-            border-top: 1px solid rgba(0, 255, 255, 0.3);
-            padding: 8px 5px; position: fixed; bottom: 0; left: 0; right: 0; z-index: 10;
-        }
-        .bottom-btn {
-            display: flex; flex-direction: column; align-items: center; gap: 3px;
-            color: #8b949e; font-size: 9px; cursor: pointer;
-            background: none; border: none; padding: 5px;
-        }
-        .bottom-btn .icon { font-size: 18px; color: #00ffff; }
-        .bottom-btn:active { color: #00ffff; }
-        .modal {
-            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.95); z-index: 100; padding: 15px;
-            flex-direction: column;
-        }
-        .modal.active { display: flex; }
-        .modal-header {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 15px;
-        }
-        .modal-header h2 { color: #00ffff; font-size: 1.2em; letter-spacing: 2px; }
-        .close-btn {
-            background: none; border: 2px solid #ff4444; color: #ff4444;
-            border-radius: 50%; width: 35px; height: 35px;
-            font-size: 18px; cursor: pointer;
-        }
-        .modal-content { flex: 1; overflow-y: auto; }
-        .modal-canvas {
-            background: rgba(0, 20, 30, 0.8);
-            border: 2px solid rgba(0, 255, 255, 0.4);
-            border-radius: 15px; min-height: 200px;
-            display: flex; align-items: center; justify-content: center;
-            color: #8b949e; font-size: 14px; text-align: center;
-            padding: 20px; margin-bottom: 15px;
-        }
-        .modal-input { display: flex; gap: 8px; margin-bottom: 15px; }
-        .modal-input input {
-            flex: 1; background: rgba(0, 20, 30, 0.8);
-            border: 1px solid rgba(0, 255, 255, 0.4);
-            border-radius: 12px; padding: 12px;
-            color: #fff; font-size: 14px; outline: none;
-        }
-        .modal-input button {
-            background: rgba(0, 255, 255, 0.15);
-            border: 2px solid #00ffff; color: #00ffff;
-            border-radius: 12px; padding: 0 20px;
-            font-size: 18px; cursor: pointer;
-        }
-        .code-editor {
-            width: 100%; min-height: 200px;
-            background: rgba(0, 20, 30, 0.9);
-            border: 2px solid rgba(0, 255, 255, 0.4);
-            border-radius: 12px; padding: 12px;
-            color: #00ffff; font-family: monospace;
-            font-size: 13px; outline: none; resize: vertical;
-        }
-        .settings-item {
-            display: flex; flex-direction: column; gap: 6px;
-            padding: 12px; background: rgba(0, 20, 30, 0.8);
-            border: 1px solid rgba(0, 255, 255, 0.3);
-            border-radius: 10px; margin-bottom: 10px;
-        }
-        .settings-item label { color: #00ffff; font-size: 13px; }
-        .settings-item input, .settings-item select {
-            background: rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(0, 255, 255, 0.4);
-            border-radius: 8px; padding: 8px 10px;
-            color: #fff; font-size: 13px; outline: none;
-            width: 100%;
-        }
-        .save-btn {
-            width: 100%; padding: 12px; margin-top: 10px;
-            background: rgba(0, 255, 255, 0.15);
-            border: 2px solid #00ffff; color: #00ffff;
-            border-radius: 12px; font-size: 16px; cursor: pointer;
-        }
-        .toast {
-            position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
-            background: rgba(0, 255, 255, 0.15);
-            border: 1px solid #00ffff; color: #00ffff;
-            padding: 10px 20px; border-radius: 20px;
-            font-size: 13px; z-index: 200; opacity: 0;
-            transition: opacity 0.3s; pointer-events: none;
-            max-width: 80%; text-align: center;
-        }
-        .toast.show { opacity: 1; }
-        .memory-item {
-            background: rgba(0, 20, 30, 0.8);
-            border-left: 3px solid #00ffff;
-            padding: 10px; margin-bottom: 8px;
-            border-radius: 8px; font-size: 13px;
-        }
-        .app-grid {
-            display: grid; grid-template-columns: repeat(3, 1fr);
-            gap: 12px; padding: 10px 0;
-        }
-        .app-item {
-            background: rgba(0, 20, 30, 0.8);
-            border: 1px solid rgba(0, 255, 255, 0.3);
-            border-radius: 12px; padding: 15px 10px;
-            text-align: center; font-size: 11px;
-            color: #fff; cursor: pointer;
-        }
-        .app-item .icon { font-size: 24px; margin-bottom: 5px; }
-        .password-wrap { position: relative; width: 100%; }
-        .password-wrap input { padding-right: 45px; }
-        .eye-btn {
-            position: absolute; right: 10px; top: 50%;
-            transform: translateY(-50%);
-            background: none; border: none; color: #00ffff;
-            font-size: 18px; cursor: pointer; padding: 5px;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>VAYRA</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#000;color:#dff;font-family:system-ui,'Segoe UI',sans-serif;overflow:hidden}
+body{display:flex;flex-direction:column;height:100dvh;padding:calc(env(safe-area-inset-top,0px) + 8px) 12px calc(env(safe-area-inset-bottom,0px) + 8px)}
+.top{display:flex;justify-content:space-between;font-size:12px;color:#8fe}
+.top b{display:block;font-size:15px;color:#fff;font-weight:500}
+.top div:last-child{text-align:right}
+h1{text-align:center;font-weight:300;letter-spacing:.35em;font-size:28px;margin:4px 0;background:linear-gradient(90deg,#22e6e0,#3b82f6);-webkit-background-clip:text;color:transparent}
+#orb{flex:1;min-height:0;width:100%}
+#state{text-align:center;font-size:11px;letter-spacing:.2em;color:#22e6e0;height:16px}
+#log{max-height:22vh;overflow-y:auto;margin:6px 0;display:flex;flex-direction:column;gap:5px}
+.m{padding:7px 11px;border-radius:12px;font-size:13px;max-width:85%;line-height:1.4}
+.user{align-self:flex-end;background:#0c2a3a;border:1px solid #22e6e055}
+.ai{align-self:flex-start;background:#13112b;border:1px solid #8b7cf655}
+.sys{align-self:center;color:#f88;font-size:12px}
+.bar{display:flex;gap:10px;align-items:center}
+#in{flex:1;background:#06141c;border:1px solid #22e6e0;border-radius:12px;color:#fff;padding:12px;font-size:15px;outline:none}
+#mic{width:52px;height:52px;border-radius:50%;border:2px solid #8b7cf6;background:radial-gradient(circle,#2a6ad0,#1a2a6a);font-size:22px;color:#fff;box-shadow:0 0 18px #8b7cf6}
+#mic.on{border-color:#22e6e0;box-shadow:0 0 28px #22e6e0}
+nav{display:flex;justify-content:space-around;margin-top:8px}
+nav button{background:none;border:none;color:#8fe;font-size:11px;display:flex;flex-direction:column;gap:2px;align-items:center}
+nav i{font-style:normal;font-size:20px}
+.modal{display:none;position:fixed;inset:0;background:#000e;z-index:9;padding:calc(env(safe-area-inset-top,0px) + 14px) 14px 14px;flex-direction:column;overflow-y:auto}
+.modal.open{display:flex}
+.mh{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.mh h2{color:#22e6e0;letter-spacing:.15em;font-size:17px}
+.x{background:none;border:2px solid #f44;color:#f44;border-radius:50%;width:34px;height:34px;font-size:16px}
+.f{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;font-size:13px;color:#22e6e0}
+.f input,.f select{background:#001018;border:1px solid #22e6e066;border-radius:8px;padding:10px;color:#fff;font-size:14px}
+.f.row{flex-direction:row;align-items:center;justify-content:space-between}
+.btn{width:100%;padding:12px;margin-top:6px;background:#22e6e022;border:2px solid #22e6e0;color:#22e6e0;border-radius:12px;font-size:15px}
+.item{display:flex;justify-content:space-between;gap:10px;padding:10px;margin-bottom:8px;border-left:3px solid #22e6e0;background:#001a24;border-radius:8px;font-size:13px}
+.item button{background:none;border:none;color:#f66;font-size:15px}
+#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#022;border:1px solid #22e6e0;color:#22e6e0;padding:9px 18px;border-radius:18px;font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:20;max-width:85%;text-align:center}
+#toast.show{opacity:1}
+</style>
 </head>
 <body>
-    <div class="container">
-        <div class="top-cards">
-            <div class="card"><div class="label">TIME</div><div class="value" id="time">--:--</div></div>
-            <div class="card" style="text-align:right;"><div class="label">DATE</div><div class="value" id="date">---</div></div>
-        </div>
-        <div class="top-cards">
-            <div class="card"><div class="label">BATTERY</div><div class="value" id="battery">--%</div></div>
-            <div class="card" style="text-align:right;"><div class="label">SIGNAL</div><div class="value">5G | Wi-Fi</div></div>
-        </div>
+<div class="top">
+  <div>TIME<b id="time">--:--</b>BATTERY<b id="bat">--%</b></div>
+  <div>DATE<b id="date">---</b>SIGNAL<b id="net">--</b></div>
+</div>
+<h1 id="title">VAYRA</h1>
+<canvas id="orb"></canvas>
+<div id="state">IDLE</div>
+<div id="log"></div>
+<div class="bar">
+  <input id="in" placeholder="Type message or tap to speak..." autocomplete="off">
+  <button id="mic">🎤</button>
+</div>
+<nav>
+  <button onclick="openM('set')"><i>⚙️</i>Settings</button>
+  <button onclick="showMem()"><i>🧠</i>Memory</button>
+  <button onclick="showRem()"><i>🔔</i>Reminders</button>
+  <button onclick="clearChat()"><i>🗑️</i>Clear</button>
+</nav>
 
-        <div class="header">
-            <h1>VAYRA</h1>
-            <p>Your Personal AI Assistant</p>
-        </div>
+<div class="modal" id="set">
+  <div class="mh"><h2>SETTINGS</h2><button class="x" onclick="closeM('set')">✕</button></div>
+  <div class="f"><label>🔑 OpenRouter API Key</label><input type="password" id="s-key" placeholder="sk-or-v1-..."></div>
+  <div class="f row"><label>👁️ Key dikhao</label><input type="checkbox" onchange="$('s-key').type=this.checked?'text':'password'"></div>
+  <div class="f"><label>👤 Naam</label><input id="s-name"></div>
+  <div class="f"><label>🤖 Model</label><input id="s-model"></div>
+  <div class="f"><label>🔊 Bhasha</label><select id="s-lang"><option value="hi-IN">हिंदी</option><option value="en-IN">English</option></select></div>
+  <div class="f row"><label>🎙️ Bolne ke baad khud sunna (auto-listen)</label><input type="checkbox" id="s-auto"></div>
+  <button class="btn" onclick="saveCfg()">💾 Save</button>
+</div>
 
-        <div class="orb-container">
-            <canvas id="orbCanvas" width="520" height="520"></canvas>
-            <button class="side-btn btn-settings" onclick="openModal('settingsModal')">⚙️<span class="label">Settings</span></button>
-            <button class="side-btn btn-code" onclick="openModal('codeModal')">&lt;/&gt;<span class="label">Code</span></button>
-            <button class="side-btn btn-chat" onclick="focusChat()">💬<span class="label">Chat</span></button>
-            <button class="side-btn btn-work" onclick="showWork()">💼<span class="label">Work</span></button>
-            <button class="side-btn btn-memory" onclick="showMemory()">🧠<span class="label">Memory</span></button>
-            <button class="side-btn btn-reminder" onclick="setReminder()">🔔<span class="label">Reminder</span></button>
-            <button class="side-btn btn-record" onclick="startRecord()">⏺️<span class="label">Record</span></button>
-            <button class="side-btn btn-apps" onclick="showApps()">▦<span class="label">Apps</span></button>
-        </div>
+<div class="modal" id="info">
+  <div class="mh"><h2 id="it"></h2><button class="x" onclick="closeM('info')">✕</button></div>
+  <div id="ib"></div>
+</div>
+<div id="toast"></div>
 
-        <div class="design-screen" onclick="openModal('designModal')">
-            <div class="placeholder"><span>✦</span>Yahan kuch banao...</div>
-        </div>
+<script>
+const $=id=>document.getElementById(id);
+const store={get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))};
+let cfg=Object.assign({key:'',name:'VAYRA',model:'meta-llama/llama-3.3-70b-instruct',lang:'hi-IN',auto:false},store.get('v_cfg',{}));
+let mem=store.get('v_mem',[]),hist=store.get('v_hist',[]),rem=store.get('v_rem',[]);
+let state='idle',emotion='happy';
 
-        <div class="status-row">
-            <div class="status-card">Listening...<div class="wave"><span></span><span></span><span></span><span></span><span></span></div></div>
-            <div class="status-card">Thinking...<div class="wave"><span></span><span></span><span></span><span></span><span></span></div></div>
-            <div class="status-card">Speaking...<div class="wave"><span></span><span></span><span></span><span></span><span></span></div></div>
-        </div>
+function toast(t){const e=$('toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),2500)}
+function openM(id){if(id==='set'){$('s-key').value=cfg.key;$('s-name').value=cfg.name;$('s-model').value=cfg.model;$('s-lang').value=cfg.lang;$('s-auto').checked=cfg.auto}$(id).classList.add('open')}
+function closeM(id){$(id).classList.remove('open')}
+function saveCfg(){cfg={key:$('s-key').value.trim(),name:$('s-name').value.trim()||'VAYRA',model:$('s-model').value.trim(),lang:$('s-lang').value,auto:$('s-auto').checked};store.set('v_cfg',cfg);$('title').textContent=cfg.name.toUpperCase();toast('Saved ✨');closeM('set')}
+$('title').textContent=cfg.name.toUpperCase();
 
-        <div class="chat-box">
-            <span style="color:#00ffff;">💬</span>
-            <input type="text" id="chatInput" placeholder="Tap to speak or type..." onkeypress="if(event.key==='Enter')sendMessage()">
-            <button class="mic-btn" onclick="startVoice()">🎤</button>
-        </div>
-        <div class="chat-hint">Kuch bhi puchho... main yahan hoon ♡</div>
-    </div>
+// ---------- Time / battery / network ----------
+function tick(){const n=new Date();$('time').textContent=n.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});$('date').textContent=n.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}).toUpperCase()}
+tick();setInterval(tick,1000);
+if(navigator.getBattery)navigator.getBattery().then(b=>{const u=()=>$('bat').textContent=Math.round(b.level*100)+'%';u();b.onlevelchange=u});
+$('net').textContent=navigator.connection?.effectiveType?.toUpperCase()||(navigator.onLine?'ONLINE':'OFFLINE');
 
-    <div class="bottom-bar">
-        <button class="bottom-btn" onclick="backupData()"><span class="icon">☁️</span>Backup</button>
-        <button class="bottom-btn" onclick="showHistory()"><span class="icon">🕐</span>History</button>
-        <button class="bottom-btn" onclick="showHelp()"><span class="icon">❓</span>Help</button>
-        <button class="bottom-btn" onclick="changeTheme()"><span class="icon">🌙</span>Theme</button>
-        <button class="bottom-btn" onclick="changeColor()"><span class="icon">🎨</span>Color</button>
-        <button class="bottom-btn" onclick="toggleSound()"><span class="icon">🔊</span>Sound</button>
-    </div>
+// ---------- Chat log ----------
+function addLog(cls,text){const d=document.createElement('div');d.className='m '+cls;d.textContent=text;$('log').append(d);while($('log').children.length>30)$('log').firstChild.remove();$('log').scrollTop=1e9}
+hist.forEach(h=>addLog(h.role==='user'?'user':'ai',h.content));
+function clearChat(){hist=[];store.set('v_hist',hist);$('log').innerHTML='';toast('Chat saaf')}
 
-    <div class="modal" id="designModal">
-        <div class="modal-header"><h2>DESIGN PREVIEW</h2><button class="close-btn" onclick="closeModal('designModal')">✕</button></div>
-        <div class="modal-content">
-            <div class="modal-canvas" id="designCanvas">Yahan tumhara design dikhega...</div>
-            <div class="modal-input">
-                <input type="text" id="designInput" placeholder="Kuch bhi banao...">
-                <button onclick="generateDesign()">✦</button>
-            </div>
-        </div>
-    </div>
+function setState(s){state=s;$('state').textContent=s.toUpperCase();$('mic').classList.toggle('on',s==='listening')}
 
-    <div class="modal" id="settingsModal">
-        <div class="modal-header"><h2>SETTINGS</h2><button class="close-btn" onclick="closeModal('settingsModal')">✕</button></div>
-        <div class="modal-content">
-            <div class="settings-item">
-                <label>🔑 OpenRouter API Key</label>
-                <div class="password-wrap">
-                    <input type="password" id="settingApiKey" placeholder="sk-or-v1-... apni key yahan daalo">
-                    <button class="eye-btn" type="button" onclick="toggleKeyVisibility()">👁️</button>
-                </div>
-            </div>
-            <div class="settings-item">
-                <label>👤 Naam</label>
-                <input type="text" id="settingName" value="Vayra">
-            </div>
-            <div class="settings-item">
-                <label>🎨 रंग</label>
-                <select id="settingColor">
-                    <option value="#00ffff">Cyan</option>
-                    <option value="#8a2be2">Purple</option>
-                    <option value="#ff4444">Red</option>
-                    <option value="#00ff88">Green</option>
-                    <option value="#ffaa00">Gold</option>
-                </select>
-            </div>
-            <div class="settings-item">
-                <label>🔊 आवाज़</label>
-                <select id="settingVoice">
-                    <option value="hi-IN">हिंदी</option>
-                    <option value="en-IN">English</option>
-                </select>
-            </div>
-            <button class="save-btn" onclick="saveSettings()">💾 Save Settings</button>
-        </div>
-    </div>
+// ---------- AI ----------
+async function ask(text){
+  text=text.trim();if(!text)return;
+  addLog('user',text);
+  if(!cfg.key){toast('Pehle API key daalo');openM('set');return}
+  setState('thinking');
+  hist.push({role:'user',content:text});hist=hist.slice(-12);
+  const sys=`You are ${cfg.name}, a warm, playful personal AI assistant. Talk in simple Hinglish like a close friend, 1-3 short sentences. Current time: ${new Date().toString()}. Known facts about the user: ${mem.join('; ')||'none'}.
+Reply ONLY with a JSON object, no other text: {"reply":"...","emotion":"happy|sad|angry|calm","remember":null or "a short durable fact about the user worth remembering","reminder":null or {"minutes":number,"text":"what to remind"}}`;
+  try{
+    const r=await fetch('https://openrouter.ai/api/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+cfg.key},body:JSON.stringify({model:cfg.model,messages:[{role:'system',content:sys},...hist]})});
+    const d=await r.json();
+    if(!d.choices)throw new Error(d.error?.message||'API error');
+    const raw=d.choices[0].message.content;let o;
+    try{o=JSON.parse(raw.match(/\{[\s\S]*\}/)[0])}catch{o={reply:raw}}
+    const reply=String(o.reply||raw);
+    if(['happy','sad','angry','calm'].includes(o.emotion))emotion=o.emotion;
+    if(o.remember&&!mem.includes(o.remember)){mem.push(String(o.remember));mem=mem.slice(-50);store.set('v_mem',mem)}
+    if(o.reminder&&+o.reminder.minutes>0)addReminder(+o.reminder.minutes,String(o.reminder.text||'Yaad dilana'));
+    hist.push({role:'assistant',content:reply});hist=hist.slice(-12);store.set('v_hist',hist);
+    addLog('ai',reply);speak(reply);
+  }catch(e){setState('idle');addLog('sys','Error: '+e.message)}
+}
+$('in').addEventListener('keydown',e=>{if(e.key==='Enter'){const v=$('in').value;$('in').value='';ask(v)}});
 
-    <div class="modal" id="codeModal">
-        <div class="modal-header"><h2>CODE EDITOR</h2><button class="close-btn" onclick="closeModal('codeModal')">✕</button></div>
-        <div class="modal-content">
-            <p style="color:#8b949e; font-size:12px; margin-bottom:10px;">Yahan code likho aur Vayra mein nayi feature jodo:</p>
-            <textarea class="code-editor" id="codeArea" placeholder="// Yahan code likho..."></textarea>
-            <button class="save-btn" onclick="runCode()">▶ Run Code</button>
-        </div>
-    </div>
+// ---------- Voice ----------
+function speak(t){
+  if(!('speechSynthesis' in window)){setState('idle');return}
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(t);u.lang=cfg.lang;
+  const v=speechSynthesis.getVoices().find(v=>v.lang===cfg.lang);if(v)u.voice=v;
+  u.onstart=()=>setState('speaking');
+  u.onend=u.onerror=()=>{setState('idle');if(cfg.auto)listen()};
+  speechSynthesis.speak(u);
+}
+let rec;
+function listen(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR)return toast('Is browser mein voice nahi hai');
+  speechSynthesis.cancel();
+  try{rec&&rec.abort()}catch{}
+  rec=new SR();rec.lang=cfg.lang;
+  rec.onstart=()=>setState('listening');
+  rec.onresult=e=>ask(e.results[0][0].transcript);
+  rec.onerror=()=>setState('idle');
+  rec.onend=()=>{if(state==='listening')setState('idle')};
+  rec.start();
+}
+$('mic').onclick=()=>{if(state==='listening'){rec.stop()}else if(state==='speaking'){speechSynthesis.cancel();setState('idle')}else listen()};
 
-    <div class="modal" id="infoModal">
-        <div class="modal-header"><h2 id="infoTitle">INFO</h2><button class="close-btn" onclick="closeModal('infoModal')">✕</button></div>
-        <div class="modal-content" id="infoContent"></div>
-    </div>
+// ---------- Memory & Reminders ----------
+function showList(title,arr,del){
+  $('it').textContent=title;const b=$('ib');b.innerHTML='';
+  if(!arr.length)b.textContent='Abhi kuch nahi hai...';
+  arr.forEach((x,i)=>{const d=document.createElement('div');d.className='item';const s=document.createElement('span');s.textContent=x.text||x;const bt=document.createElement('button');bt.textContent='✕';bt.onclick=()=>{del(i);showList(title,arr,del)};d.append(s,bt);b.append(d)});
+  openM('info');
+}
+function showMem(){showList('MEMORY',mem,i=>{mem.splice(i,1);store.set('v_mem',mem)})}
+function showRem(){showList('REMINDERS',rem.map(r=>({text:new Date(r.at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})+' — '+r.text})),i=>{rem.splice(i,1);store.set('v_rem',rem)})}
+function addReminder(min,text){
+  const r={id:Date.now()+Math.random(),at:Date.now()+min*60000,text};
+  rem.push(r);store.set('v_rem',rem);schedule(r);
+  if('Notification' in window&&Notification.permission==='default')Notification.requestPermission();
+  toast('Reminder set: '+min+' min baad');
+}
+function schedule(r){
+  setTimeout(()=>{
+    if(!rem.some(x=>x.id===r.id))return;
+    rem=rem.filter(x=>x.id!==r.id);store.set('v_rem',rem);
+    const t='Yaad dilana: '+r.text;addLog('ai',t);speak(t);
+    if('Notification' in window&&Notification.permission==='granted')new Notification(cfg.name,{body:r.text});
+  },Math.max(r.at-Date.now(),0));
+}
+rem.forEach(schedule);
 
-    <div class="toast" id="toast"></div>
-
-    <script>
-        // ============ OPENROUTER API ============
-        let OPENROUTER_API_KEY = localStorage.getItem('vayra_api_key') || "";
-        const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-        const MODEL = "meta-llama/llama-3.3-70b-instruct";
-
-        // ============ VAYRA ORB (Living Face + Rotating Rings) ============
-        const canvas = document.getElementById('orbCanvas');
-        const ctx = canvas.getContext('2d');
-        const w = canvas.width, h = canvas.height;
-        const cx = w/2, cy = h/2;
-        const particles = [], ringParticles = [];
-        let currentColor = '#00ffff';
-        let emotion = 'happy';
-        let isSpeaking = false;
-        let mouthPhase = 0;
-        let ringRotation = 0;
-        let pulsePhase = 0;
-        let blinkTimer = 0;
-
-        for (let i = 0; i < 400; i++) {
-            particles.push({
-                angle: Math.random() * Math.PI * 2,
-                radius: Math.random() * 130,
-                size: Math.random() * 2 + 0.5,
-                speed: Math.random() * 0.01 + 0.005,
-                color: Math.random() > 0.5 ? currentColor : '#8a2be2',
-                phase: Math.random() * Math.PI * 2
-            });
-        }
-        for (let i = 0; i < 150; i++) {
-            ringParticles.push({
-                angle: Math.random() * Math.PI * 2,
-                radius: 180 + Math.random() * 60,
-                size: Math.random() * 2 + 0.5,
-                speed: Math.random() * 0.01 + 0.003,
-                color: currentColor
-            });
-        }
-
-        let time = 0;
-        function drawOrb() {
-            ctx.clearRect(0, 0, w, h);
-            time += 0.02;
-            mouthPhase += 0.15;
-            ringRotation += 0.005;
-            pulsePhase += 0.08;
-            blinkTimer += 0.03;
-
-            // Blink logic
-            let blink = 1;
-            if (blinkTimer > 3 && blinkTimer < 3.3) blink = 0.1;
-            if (blinkTimer > 3.5) blinkTimer = 0;
-
-            // Pulse (breathing) - stronger when speaking
-            const pulseStrength = isSpeaking ? 0.15 : 0.05;
-            const pulse = 1 + Math.sin(pulsePhase) * pulseStrength;
-
-            const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, 250);
-            gradient.addColorStop(0, 'rgba(0, 255, 255, 0.15)');
-            gradient.addColorStop(0.5, 'rgba(138, 43, 226, 0.1)');
-            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-            ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, w, h);
-
-            // Draw particles (pulsing)
-            particles.forEach(p => {
-                p.angle += p.speed;
-                const x = cx + Math.cos(p.angle) * p.radius * pulse;
-                const y = cy + Math.sin(p.angle) * p.radius * 0.85 * pulse;
-                const pPulse = Math.sin(time + p.phase) * 0.5 + 0.5;
-                ctx.beginPath();
-                ctx.arc(x, y, p.size * (0.8 + pPulse * 0.4), 0, Math.PI * 2);
-                ctx.fillStyle = p.color;
-                ctx.globalAlpha = 0.4 + pPulse * 0.4;
-                ctx.fill();
-            });
-
-            // Eyes with blink
-            ctx.globalAlpha = 1;
-            ctx.shadowBlur = 25;
-            ctx.shadowColor = currentColor;
-            ctx.fillStyle = '#ffffff';
-            ctx.beginPath(); ctx.ellipse(cx - 45, cy - 18, 18, 12 * blink, 0, 0, Math.PI * 2); ctx.fill();
-            ctx.beginPath(); ctx.ellipse(cx + 45, cy - 18, 18, 12 * blink, 0, 0, Math.PI * 2); ctx.fill();
-
-            // Emotion-based mouth
-            ctx.shadowBlur = 20;
-            ctx.strokeStyle = currentColor;
-            ctx.lineWidth = 4;
-            ctx.beginPath();
-            if (emotion === 'happy') {
-                ctx.arc(cx, cy + 30, 35, 0.1, Math.PI - 0.1);
-            } else if (emotion === 'angry') {
-                ctx.arc(cx, cy + 55, 30, Math.PI + 0.2, -0.2);
-            } else if (emotion === 'sad') {
-                ctx.arc(cx, cy + 55, 35, Math.PI + 0.3, -0.3);
-            } else {
-                ctx.moveTo(cx - 25, cy + 35);
-                ctx.lineTo(cx + 25, cy + 35);
-            }
-            ctx.stroke();
-
-            // Speaking mouth animation (opens/closes)
-            if (isSpeaking) {
-                const mouthOpen = Math.abs(Math.sin(mouthPhase)) * 18 + 5;
-                ctx.beginPath();
-                ctx.ellipse(cx, cy + 30, 20, mouthOpen, 0, 0, Math.PI * 2);
-                ctx.fillStyle = currentColor;
-                ctx.globalAlpha = 0.4;
-                ctx.fill();
-                ctx.globalAlpha = 1;
-            }
-
-            // Rotating rings (24/7)
-            ctx.shadowBlur = 0;
-
-            // Ring 1 (outer, clockwise)
-            ctx.save();
-            ctx.translate(cx, cy);
-            ctx.rotate(ringRotation);
-            ctx.beginPath();
-            ctx.arc(0, 0, 240, 0, Math.PI * 2);
-            ctx.strokeStyle = currentColor;
-            ctx.lineWidth = 1.5;
-            ctx.globalAlpha = 0.4;
-            ctx.stroke();
-            // Ring 1 dots
-            for (let i = 0; i < 12; i++) {
-                const a = (i / 12) * Math.PI * 2;
-                const x = Math.cos(a) * 240;
-                const y = Math.sin(a) * 240;
-                ctx.beginPath();
-                ctx.arc(x, y, 3, 0, Math.PI * 2);
-                ctx.fillStyle = currentColor;
-                ctx.globalAlpha = 0.8;
-                ctx.fill();
-            }
-            ctx.restore();
-
-            // Ring 2 (inner, counter-clockwise)
-            ctx.save();
-            ctx.translate(cx, cy);
-            ctx.rotate(-ringRotation * 1.5);
-            ctx.beginPath();
-            ctx.arc(0, 0, 220, 0, Math.PI * 2);
-            ctx.strokeStyle = currentColor;
-            ctx.lineWidth = 2;
-            ctx.globalAlpha = 0.5;
-            ctx.setLineDash([15, 10]);
-            ctx.stroke();
-            ctx.setLineDash([]);
-            ctx.restore();
-
-            // Ring 3 (middle, clockwise slow)
-            ctx.save();
-            ctx.translate(cx, cy);
-            ctx.rotate(ringRotation * 0.7);
-            ctx.beginPath();
-            ctx.arc(0, 0, 200, 0, Math.PI * 2);
-            ctx.strokeStyle = '#8a2be2';
-            ctx.lineWidth = 1;
-            ctx.globalAlpha = 0.6;
-            ctx.stroke();
-            ctx.restore();
-
-            // Ring particles
-            ringParticles.forEach(p => {
-                p.angle += p.speed;
-                const x = cx + Math.cos(p.angle) * p.radius;
-                const y = cy + Math.sin(p.angle) * p.radius * 0.4;
-                ctx.beginPath();
-                ctx.arc(x, y, p.size, 0, Math.PI * 2);
-                ctx.fillStyle = p.color;
-                ctx.globalAlpha = 0.6;
-                ctx.fill();
-            });
-
-            ctx.globalAlpha = 1;
-            requestAnimationFrame(drawOrb);
-        }
-        drawOrb();
-
-        // ============ TIME & BATTERY ============
-        function updateTime() {
-            const now = new Date();
-            document.getElementById('time').textContent = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-            document.getElementById('date').textContent = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }).toUpperCase();
-        }
-        updateTime();
-        setInterval(updateTime, 1000);
-
-        if (navigator.getBattery) {
-            navigator.getBattery().then(b => {
-                document.getElementById('battery').textContent = Math.round(b.level * 100) + '%';
-                b.addEventListener('levelchange', () => {
-                    document.getElementById('battery').textContent = Math.round(b.level * 100) + '%';
-                });
-            });
-        }
-
-        // ============ AI CHAT (OPENROUTER) ============
-        async function sendMessage() {
-            const input = document.getElementById('chatInput');
-            const text = input.value.trim();
-            if (!text) return;
-            input.value = '';
-            toast('Vayra soch rahi hai...');
-
-            if (!OPENROUTER_API_KEY) {
-                toast('Pehle Settings mein API Key daalo!');
-                openModal('settingsModal');
-                return;
-            }
-
-            try {
-                const response = await fetch(OPENROUTER_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + OPENROUTER_API_KEY
-                    },
-                    body: JSON.stringify({
-                        model: MODEL,
-                        messages: [
-                            { role: 'system', content: 'You are Vayra — a warm, caring, playful personal AI assistant. Talk in simple Hindi/Hinglish like a close friend. Be affectionate and helpful. Keep replies short (1-3 sentences). If user says "smile" or "khush ho", set emotion to happy. If user says "gussa" or "angry", set emotion to angry. If user says "sad" or "udaas", set emotion to sad.' },
-                            { role: 'user', content: text }
-                        ]
-                    })
-                });
-                const data = await response.json();
-                if (!data.choices || !data.choices[0]) {
-                    toast('API Error: ' + (data.error?.message || 'Unknown'));
-                    return;
-                }
-                const reply = data.choices[0].message.content;
-                toast('Vayra: ' + reply);
-                setEmotionFromText(text);
-                speak(reply);
-            } catch (err) {
-                toast('Error: ' + err.message);
-            }
-        }
-
-        function setEmotionFromText(text) {
-            const t = text.toLowerCase();
-            if (t.includes('smile') || t.includes('khush') || t.includes('happy')) emotion = 'happy';
-            else if (t.includes('gussa') || t.includes('angry')) emotion = 'angry';
-            else if (t.includes('sad') || t.includes('udaas')) emotion = 'sad';
-            else emotion = 'happy';
-        }
-
-        function speak(text) {
-            if ('speechSynthesis' in window) {
-                isSpeaking = true;
-                const u = new SpeechSynthesisUtterance(text);
-                u.lang = localStorage.getItem('vayra_voice') || 'hi-IN';
-                u.rate = 1;
-                u.onend = () => { isSpeaking = false; };
-                speechSynthesis.speak(u);
-            }
-        }
-
-        function startVoice() {
-            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-                toast('Voice support nahi hai is browser mein');
-                return;
-            }
-            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-            const recognition = new SR();
-            recognition.lang = 'hi-IN';
-            recognition.start();
-            toast('Sun rahi hoon...');
-            recognition.onresult = (e) => {
-                const text = e.results[0][0].transcript;
-                document.getElementById('chatInput').value = text;
-                sendMessage();
-            };
-            recognition.onerror = () => toast('Phir se koshish karo...');
-        }
-
-        // ============ MODALS ============
-        function openModal(id) { 
-            if (id === 'settingsModal') {
-                document.getElementById('settingApiKey').value = OPENROUTER_API_KEY;
-            }
-            document.getElementById(id).classList.add('active'); 
-        }
-        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
-
-        function focusChat() { document.getElementById('chatInput').focus(); }
-
-        function toggleKeyVisibility() {
-            const inp = document.getElementById('settingApiKey');
-            if (inp.type === 'password') {
-                inp.type = 'text';
-            } else {
-                inp.type = 'password';
-            }
-        }
-
-        function showMemory() {
-            const mem = JSON.parse(localStorage.getItem('vayra_memory') || '[]');
-            document.getElementById('infoTitle').textContent = 'MEMORY';
-            document.getElementById('infoContent').innerHTML = mem.length ? mem.map(m => `<div class="memory-item">${m}</div>`).join('') : '<p style="color:#8b949e;">Abhi kuch yaad nahi hai...</p>';
-            openModal('infoModal');
-        }
-
-        function showWork() {
-            document.getElementById('infoTitle').textContent = 'WORK';
-            document.getElementById('infoContent').innerHTML = '<p style="color:#8b949e;">Aaj ke kaam yahan dikhenge...</p>';
-            openModal('infoModal');
-        }
-
-        function showApps() {
-            const apps = [
-                { icon: '📱', name: 'WhatsApp' }, { icon: '📷', name: 'Camera' },
-                { icon: '🎵', name: 'Music' }, { icon: '📞', name: 'Phone' },
-                { icon: '🌐', name: 'Chrome' }, { icon: '📧', name: 'Gmail' },
-                { icon: '📸', name: 'Instagram' }, { icon: '▶️', name: 'YouTube' },
-                { icon: '⚙️', name: 'Settings' }
-            ];
-            document.getElementById('infoTitle').textContent = 'APPS';
-            document.getElementById('infoContent').innerHTML = '<div class="app-grid">' + apps.map(a => `<div class="app-item" onclick="toast('${a.name} khol rahi hoon...')"><div class="icon">${a.icon}</div>${a.name}</div>`).join('') + '</div>';
-            openModal('infoModal');
-        }
-
-        function setReminder() {
-            const time = prompt('Kitne baje yaad dilau? (jaise: 5 PM)');
-            if (time) {
-                toast('Reminder set: ' + time);
-                const mem = JSON.parse(localStorage.getItem('vayra_memory') || '[]');
-                mem.push('Reminder: ' + time);
-                localStorage.setItem('vayra_memory', JSON.stringify(mem));
-            }
-        }
-
-        function startRecord() { toast('🔴 Recording shuru... (demo)'); }
-
-        // ============ SETTINGS ============
-        function saveSettings() {
-            const key = document.getElementById('settingApiKey').value.trim();
-            const name = document.getElementById('settingName').value;
-            const color = document.getElementById('settingColor').value;
-            const voice = document.getElementById('settingVoice').value;
-            
-            if (key) {
-                localStorage.setItem('vayra_api_key', key);
-                OPENROUTER_API_KEY = key;
-            }
-            localStorage.setItem('vayra_name', name);
-            localStorage.setItem('vayra_color', color);
-            localStorage.setItem('vayra_voice', voice);
-            currentColor = color;
-            particles.forEach(p => { if (p.color !== '#8a2be2') p.color = color; });
-            ringParticles.forEach(p => p.color = color);
-            document.querySelector('.header h1').textContent = name.toUpperCase();
-            toast('Settings saved! ✨');
-            closeModal('settingsModal');
-        }
-
-        function runCode() {
-            const code = document.getElementById('codeArea').value;
-            try { eval(code); toast('Code chal gaya!'); }
-            catch (e) { toast('Error: ' + e.message); }
-        }
-
-        function generateDesign() {
-            const prompt = document.getElementById('designInput').value;
-            if (!prompt) return;
-            document.getElementById('designCanvas').innerHTML = `<p style="color:#00ffff;">✦ "${prompt}" ban raha hai...</p>`;
-            toast('Design ban raha hai...');
-        }
-
-        function backupData() {
-            const data = { memory: localStorage.getItem('vayra_memory'), settings: { name: localStorage.getItem('vayra_name'), color: localStorage.getItem('vayra_color'), voice: localStorage.getItem('vayra_voice') } };
-            localStorage.setItem('vayra_backup', JSON.stringify(data));
-            toast('Backup ho gaya! ☁️');
-        }
-        function showHistory() { toast('History khali hai...'); }
-        function showHelp() {
-            document.getElementById('infoTitle').textContent = 'HELP';
-            document.getElementById('infoContent').innerHTML = '<p style="color:#fff; line-height:1.8;">🎤 बोलने के लिए माइक दबाओ<br>💬 लिखने के लिए चैट बॉक्स<br>⚙️ सेटिंग्स में API Key, रंग, नाम बदलो<br>🧠 मेमोरी में याददाश्त देखो<br>👁️ Key देखने के लिए आँख दबाओ<br>😊 "smile" बोलो तो Vayra हँसेगी<br>😠 "gussa" बोलो तो गुस्सा करेगी<br>🔄 रिंग 24/7 घूमती रहेगी<br></p>';
-            openModal('infoModal');
-        }
-        function changeTheme() { document.body.style.background = document.body.style.background === 'rgb(0, 0, 0)' ? '#0a0a2a' : '#000'; toast('Theme badal gayi! 🌙'); }
-        function changeColor() {
-            const colors = ['#00ffff', '#8a2be2', '#ff4444', '#00ff88', '#ffaa00'];
-            currentColor = colors[Math.floor(Math.random() * colors.length)];
-            particles.forEach(p => { if (p.color !== '#8a2be2') p.color = currentColor; });
-            ringParticles.forEach(p => p.color = currentColor);
-            toast('Color badal gaya! 🎨');
-        }
-        function toggleSound() { toast('Sound toggle (demo) 🔊'); }
-
-        function toast(msg) {
-            const t = document.getElementById('toast');
-            t.textContent = msg;
-            t.classList.add('show');
-            setTimeout(() => t.classList.remove('show'), 3000);
-        }
-
-        window.addEventListener('load', () => {
-            const name = localStorage.getItem('vayra_name');
-            const color = localStorage.getItem('vayra_color');
-            if (name) document.querySelector('.header h1').textContent = name.toUpperCase();
-            if (color) {
-                currentColor = color;
-                particles.forEach(p => { if (p.color !== '#8a2be2') p.color = color; });
-                ringParticles.forEach(p => p.color = color);
-            }
-        });
-    </script>
+// ---------- ORB ----------
+const cv=$('orb'),ctx=cv.getContext('2d');
+let W,H,D=Math.min(devicePixelRatio||1,2);
+function resize(){W=cv.clientWidth;H=cv.clientHeight;cv.width=W*D;cv.height=H*D;ctx.setTransform(D,0,0,D,0,0)}
+addEventListener('resize',resize);resize();
+const EMO={happy:[34,230,224],sad:[90,140,255],angry:[255,80,80],calm:[139,124,246]};
+let col=[...EMO.happy],level=0,t=0;
+const N=1000,pts=[];
+for(let i=0;i<N;i++){const y=1-2*(i+.5)/N,r=Math.sqrt(1-y*y),a=i*2.399963;pts.push({x:Math.cos(a)*r,y,z:Math.sin(a)*r,s:Math.random()*6.28,p:Math.random()>.7})}
+function ring(cx,cy,r,w,c,rot,dash,gap,al){ctx.save();ctx.translate(cx,cy);ctx.rotate(rot);ctx.strokeStyle=c;ctx.globalAlpha=al;ctx.lineWidth=w;ctx.setLineDash([dash,gap]);ctx.shadowColor=c;ctx.shadowBlur=10;ctx.beginPath();ctx.arc(0,0,r,0,6.2832);ctx.stroke();ctx.restore()}
+function frame(){
+  t+=.016;
+  const tg=EMO[emotion];for(let i=0;i<3;i++)col[i]+=(tg[i]-col[i])*.05;
+  const C=`rgb(${col[0]|0},${col[1]|0},${col[2]|0})`;
+  let target=0;
+  if(state==='speaking')target=.35+.65*Math.abs(Math.sin(t*9)*Math.sin(t*5.3+1));
+  else if(state==='listening')target=.2+.15*Math.sin(t*4);
+  else if(state==='thinking')target=.1;
+  level+=(target-level)*.15;
+  const boost=(state==='thinking'?3:1)+level*2.5;
+  ctx.clearRect(0,0,W,H);
+  const cx=W/2,cy=H/2,R=Math.min(W,H)*.27;
+  const g=ctx.createRadialGradient(cx,cy,0,cx,cy,R*1.4);
+  g.addColorStop(0,`rgba(${col[0]|0},${col[1]|0},${col[2]|0},${.12+level*.3})`);g.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  ring(cx,cy,R*1.62,2.5,C,0,2000,0,.9);
+  ring(cx,cy,R*1.5,1.5,C,t*.3*boost,3,9,.7);
+  ring(cx,cy,R*1.38,2,'#3b82f6',-t*.4*boost,260,40,.9);
+  ring(cx,cy,R*1.28,2,'#8b7cf6',t*.6*boost,160,60,.9);
+  ring(cx,cy,R*1.18,1.5,C,-t*.9*boost,40,20,.8);
+  ring(cx,cy,R*.62+level*8,3,C,t*1.2*boost,90,50,.95);
+  ring(cx,cy,R*.4+level*6,2,'#8b7cf6',-t*1.6*boost,50,30,.9);
+  const ry=t*.35*(1+level*2),cs=Math.cos(ry),sn=Math.sin(ry),list=[];
+  for(const p of pts){
+    const wob=1+level*.22*Math.sin(t*8+p.s*3)+level*.06*Math.sin(p.s*7+t*3);
+    list.push([(p.x*cs+p.z*sn)*wob,p.y*wob,(-p.x*sn+p.z*cs)*wob,p.p]);
+  }
+  list.sort((a,b)=>a[2]-b[2]);
+  ctx.shadowBlur=0;ctx.setLineDash([]);
+  for(const [x,y,z,pp] of list){
+    const k=(z+1)/2;ctx.globalAlpha=.25+k*.75;ctx.fillStyle=pp?'#8b7cf6':C;
+    ctx.beginPath();ctx.arc(cx+x*R,cy+y*R,.6+k*1.3+level*.8,0,6.2832);ctx.fill();
+  }
+  ctx.globalAlpha=1;requestAnimationFrame(frame);
+}
+frame();
+</script>
 </body>
 </html>
