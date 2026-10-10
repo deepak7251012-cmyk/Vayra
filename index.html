@@ -35,7 +35,7 @@
             text-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff; font-weight: 900;
         }
         .header p { font-size: 0.7em; color: #8b949e; letter-spacing: 2px; margin-top: 3px; }
-        .orb-container { position: relative; width: 220px; height: 220px; margin: 0 auto 15px; }
+        .orb-container { position: relative; width: 260px; height: 260px; margin: 0 auto 15px; }
         #orbCanvas {
             width: 100%; height: 100%; border-radius: 50%;
             box-shadow: 0 0 60px rgba(0, 255, 255, 0.5), 0 0 120px rgba(138, 43, 226, 0.3);
@@ -50,14 +50,14 @@
             transition: all 0.3s;
         }
         .side-btn:active { transform: scale(0.9); background: rgba(0, 255, 255, 0.2); }
-        .btn-settings { top: 0; left: calc(50% - 130px); }
-        .btn-code { top: 0; right: calc(50% - 130px); }
-        .btn-chat { top: 70px; left: calc(50% - 125px); }
-        .btn-work { top: 130px; left: calc(50% - 130px); }
-        .btn-memory { top: 190px; left: calc(50% - 125px); }
-        .btn-reminder { top: 70px; right: calc(50% - 125px); }
-        .btn-record { top: 130px; right: calc(50% - 130px); }
-        .btn-apps { top: 190px; right: calc(50% - 125px); }
+        .btn-settings { top: 0; left: calc(50% - 150px); }
+        .btn-code { top: 0; right: calc(50% - 150px); }
+        .btn-chat { top: 80px; left: calc(50% - 145px); }
+        .btn-work { top: 150px; left: calc(50% - 150px); }
+        .btn-memory { top: 220px; left: calc(50% - 145px); }
+        .btn-reminder { top: 80px; right: calc(50% - 145px); }
+        .btn-record { top: 150px; right: calc(50% - 150px); }
+        .btn-apps { top: 220px; right: calc(50% - 145px); }
         .side-btn .label {
             position: absolute; bottom: -18px; font-size: 9px;
             color: #8b949e; white-space: nowrap; letter-spacing: 0.5px;
@@ -252,7 +252,7 @@
         </div>
 
         <div class="orb-container">
-            <canvas id="orbCanvas" width="440" height="440"></canvas>
+            <canvas id="orbCanvas" width="520" height="520"></canvas>
             <button class="side-btn btn-settings" onclick="openModal('settingsModal')">⚙️<span class="label">Settings</span></button>
             <button class="side-btn btn-code" onclick="openModal('codeModal')">&lt;/&gt;<span class="label">Code</span></button>
             <button class="side-btn btn-chat" onclick="focusChat()">💬<span class="label">Chat</span></button>
@@ -358,13 +358,19 @@
         const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
         const MODEL = "meta-llama/llama-3.3-70b-instruct";
 
-        // ============ VAYRA ORB ============
+        // ============ VAYRA ORB (Living Face + Rotating Rings) ============
         const canvas = document.getElementById('orbCanvas');
         const ctx = canvas.getContext('2d');
         const w = canvas.width, h = canvas.height;
         const cx = w/2, cy = h/2;
         const particles = [], ringParticles = [];
         let currentColor = '#00ffff';
+        let emotion = 'happy';
+        let isSpeaking = false;
+        let mouthPhase = 0;
+        let ringRotation = 0;
+        let pulsePhase = 0;
+        let blinkTimer = 0;
 
         for (let i = 0; i < 400; i++) {
             particles.push({
@@ -376,12 +382,12 @@
                 phase: Math.random() * Math.PI * 2
             });
         }
-        for (let i = 0; i < 100; i++) {
+        for (let i = 0; i < 150; i++) {
             ringParticles.push({
                 angle: Math.random() * Math.PI * 2,
-                radius: 160 + Math.random() * 40,
-                size: Math.random() * 1.5 + 0.5,
-                speed: Math.random() * 0.005 + 0.002,
+                radius: 180 + Math.random() * 60,
+                size: Math.random() * 2 + 0.5,
+                speed: Math.random() * 0.01 + 0.003,
                 color: currentColor
             });
         }
@@ -390,38 +396,129 @@
         function drawOrb() {
             ctx.clearRect(0, 0, w, h);
             time += 0.02;
-            const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, 200);
+            mouthPhase += 0.15;
+            ringRotation += 0.005;
+            pulsePhase += 0.08;
+            blinkTimer += 0.03;
+
+            // Blink logic
+            let blink = 1;
+            if (blinkTimer > 3 && blinkTimer < 3.3) blink = 0.1;
+            if (blinkTimer > 3.5) blinkTimer = 0;
+
+            // Pulse (breathing) - stronger when speaking
+            const pulseStrength = isSpeaking ? 0.15 : 0.05;
+            const pulse = 1 + Math.sin(pulsePhase) * pulseStrength;
+
+            const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, 250);
             gradient.addColorStop(0, 'rgba(0, 255, 255, 0.15)');
             gradient.addColorStop(0.5, 'rgba(138, 43, 226, 0.1)');
             gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
             ctx.fillStyle = gradient;
             ctx.fillRect(0, 0, w, h);
 
+            // Draw particles (pulsing)
             particles.forEach(p => {
                 p.angle += p.speed;
-                const x = cx + Math.cos(p.angle) * p.radius;
-                const y = cy + Math.sin(p.angle) * p.radius * 0.85;
-                const pulse = Math.sin(time + p.phase) * 0.5 + 0.5;
+                const x = cx + Math.cos(p.angle) * p.radius * pulse;
+                const y = cy + Math.sin(p.angle) * p.radius * 0.85 * pulse;
+                const pPulse = Math.sin(time + p.phase) * 0.5 + 0.5;
                 ctx.beginPath();
-                ctx.arc(x, y, p.size * (0.8 + pulse * 0.4), 0, Math.PI * 2);
+                ctx.arc(x, y, p.size * (0.8 + pPulse * 0.4), 0, Math.PI * 2);
                 ctx.fillStyle = p.color;
-                ctx.globalAlpha = 0.4 + pulse * 0.4;
+                ctx.globalAlpha = 0.4 + pPulse * 0.4;
                 ctx.fill();
             });
 
+            // Eyes with blink
             ctx.globalAlpha = 1;
-            ctx.shadowBlur = 20;
+            ctx.shadowBlur = 25;
             ctx.shadowColor = currentColor;
             ctx.fillStyle = '#ffffff';
-            ctx.beginPath(); ctx.ellipse(cx - 40, cy - 15, 15, 10, 0, 0, Math.PI * 2); ctx.fill();
-            ctx.beginPath(); ctx.ellipse(cx + 40, cy - 15, 15, 10, 0, 0, Math.PI * 2); ctx.fill();
-            ctx.shadowBlur = 15;
-            ctx.beginPath();
-            ctx.arc(cx, cy + 25, 30, 0.1, Math.PI - 0.1);
+            ctx.beginPath(); ctx.ellipse(cx - 45, cy - 18, 18, 12 * blink, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(cx + 45, cy - 18, 18, 12 * blink, 0, 0, Math.PI * 2); ctx.fill();
+
+            // Emotion-based mouth
+            ctx.shadowBlur = 20;
             ctx.strokeStyle = currentColor;
-            ctx.lineWidth = 3;
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            if (emotion === 'happy') {
+                ctx.arc(cx, cy + 30, 35, 0.1, Math.PI - 0.1);
+            } else if (emotion === 'angry') {
+                ctx.arc(cx, cy + 55, 30, Math.PI + 0.2, -0.2);
+            } else if (emotion === 'sad') {
+                ctx.arc(cx, cy + 55, 35, Math.PI + 0.3, -0.3);
+            } else {
+                ctx.moveTo(cx - 25, cy + 35);
+                ctx.lineTo(cx + 25, cy + 35);
+            }
             ctx.stroke();
+
+            // Speaking mouth animation (opens/closes)
+            if (isSpeaking) {
+                const mouthOpen = Math.abs(Math.sin(mouthPhase)) * 18 + 5;
+                ctx.beginPath();
+                ctx.ellipse(cx, cy + 30, 20, mouthOpen, 0, 0, Math.PI * 2);
+                ctx.fillStyle = currentColor;
+                ctx.globalAlpha = 0.4;
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            }
+
+            // Rotating rings (24/7)
             ctx.shadowBlur = 0;
+
+            // Ring 1 (outer, clockwise)
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(ringRotation);
+            ctx.beginPath();
+            ctx.arc(0, 0, 240, 0, Math.PI * 2);
+            ctx.strokeStyle = currentColor;
+            ctx.lineWidth = 1.5;
+            ctx.globalAlpha = 0.4;
+            ctx.stroke();
+            // Ring 1 dots
+            for (let i = 0; i < 12; i++) {
+                const a = (i / 12) * Math.PI * 2;
+                const x = Math.cos(a) * 240;
+                const y = Math.sin(a) * 240;
+                ctx.beginPath();
+                ctx.arc(x, y, 3, 0, Math.PI * 2);
+                ctx.fillStyle = currentColor;
+                ctx.globalAlpha = 0.8;
+                ctx.fill();
+            }
+            ctx.restore();
+
+            // Ring 2 (inner, counter-clockwise)
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(-ringRotation * 1.5);
+            ctx.beginPath();
+            ctx.arc(0, 0, 220, 0, Math.PI * 2);
+            ctx.strokeStyle = currentColor;
+            ctx.lineWidth = 2;
+            ctx.globalAlpha = 0.5;
+            ctx.setLineDash([15, 10]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.restore();
+
+            // Ring 3 (middle, clockwise slow)
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(ringRotation * 0.7);
+            ctx.beginPath();
+            ctx.arc(0, 0, 200, 0, Math.PI * 2);
+            ctx.strokeStyle = '#8a2be2';
+            ctx.lineWidth = 1;
+            ctx.globalAlpha = 0.6;
+            ctx.stroke();
+            ctx.restore();
+
+            // Ring particles
             ringParticles.forEach(p => {
                 p.angle += p.speed;
                 const x = cx + Math.cos(p.angle) * p.radius;
@@ -432,12 +529,7 @@
                 ctx.globalAlpha = 0.6;
                 ctx.fill();
             });
-            ctx.globalAlpha = 0.3;
-            ctx.beginPath();
-            ctx.arc(cx, cy, 190, 0, Math.PI * 2);
-            ctx.strokeStyle = currentColor;
-            ctx.lineWidth = 1;
-            ctx.stroke();
+
             ctx.globalAlpha = 1;
             requestAnimationFrame(drawOrb);
         }
@@ -485,7 +577,7 @@
                     body: JSON.stringify({
                         model: MODEL,
                         messages: [
-                            { role: 'system', content: 'You are Vayra — a warm, caring, playful personal AI assistant. Talk in simple Hindi/Hinglish like a close friend. Be affectionate and helpful. Keep replies short (1-3 sentences).' },
+                            { role: 'system', content: 'You are Vayra — a warm, caring, playful personal AI assistant. Talk in simple Hindi/Hinglish like a close friend. Be affectionate and helpful. Keep replies short (1-3 sentences). If user says "smile" or "khush ho", set emotion to happy. If user says "gussa" or "angry", set emotion to angry. If user says "sad" or "udaas", set emotion to sad.' },
                             { role: 'user', content: text }
                         ]
                     })
@@ -497,17 +589,28 @@
                 }
                 const reply = data.choices[0].message.content;
                 toast('Vayra: ' + reply);
+                setEmotionFromText(text);
                 speak(reply);
             } catch (err) {
                 toast('Error: ' + err.message);
             }
         }
 
+        function setEmotionFromText(text) {
+            const t = text.toLowerCase();
+            if (t.includes('smile') || t.includes('khush') || t.includes('happy')) emotion = 'happy';
+            else if (t.includes('gussa') || t.includes('angry')) emotion = 'angry';
+            else if (t.includes('sad') || t.includes('udaas')) emotion = 'sad';
+            else emotion = 'happy';
+        }
+
         function speak(text) {
             if ('speechSynthesis' in window) {
+                isSpeaking = true;
                 const u = new SpeechSynthesisUtterance(text);
                 u.lang = localStorage.getItem('vayra_voice') || 'hi-IN';
                 u.rate = 1;
+                u.onend = () => { isSpeaking = false; };
                 speechSynthesis.speak(u);
             }
         }
@@ -631,7 +734,7 @@
         function showHistory() { toast('History khali hai...'); }
         function showHelp() {
             document.getElementById('infoTitle').textContent = 'HELP';
-            document.getElementById('infoContent').innerHTML = '<p style="color:#fff; line-height:1.8;">🎤 बोलने के लिए माइक दबाओ<br>💬 लिखने के लिए चैट बॉक्स<br>⚙️ सेटिंग्स में API Key, रंग, नाम बदलो<br>🧠 मेमोरी में याददाश्त देखो<br>👁️ Key देखने के लिए आँख दबाओ<br></p>';
+            document.getElementById('infoContent').innerHTML = '<p style="color:#fff; line-height:1.8;">🎤 बोलने के लिए माइक दबाओ<br>💬 लिखने के लिए चैट बॉक्स<br>⚙️ सेटिंग्स में API Key, रंग, नाम बदलो<br>🧠 मेमोरी में याददाश्त देखो<br>👁️ Key देखने के लिए आँख दबाओ<br>😊 "smile" बोलो तो Vayra हँसेगी<br>😠 "gussa" बोलो तो गुस्सा करेगी<br>🔄 रिंग 24/7 घूमती रहेगी<br></p>';
             openModal('infoModal');
         }
         function changeTheme() { document.body.style.background = document.body.style.background === 'rgb(0, 0, 0)' ? '#0a0a2a' : '#000'; toast('Theme badal gayi! 🌙'); }
@@ -662,127 +765,5 @@
             }
         });
     </script>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="hi">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>VAYRA Orb</title>
-<style>
-:root{--cy:#22e6e0;--pu:#8b7cf6;--bl:#3b82f6;--bg:#000;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-html,body{height:100%;margin:0;background:#000;color:#bff;font-family:system-ui,sans-serif;overflow:hidden}
-canvas{position:fixed;inset:0;width:100%;height:100%}
-h1{position:fixed;top:calc(env(safe-area-inset-top,0px) + 14px);width:100%;text-align:center;margin:0;font-weight:300;letter-spacing:.35em;font-size:34px;background:linear-gradient(90deg,var(--cy),var(--bl));-webkit-background-clip:text;color:transparent}
-#bar{position:fixed;left:16px;right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 22px);display:flex;gap:12px;align-items:center}
-#msg{flex:1;background:#06141c;border:1px solid var(--cy);border-radius:10px;color:#dff;padding:14px;font-size:16px;outline:none;box-shadow:0 0 14px #22e6e033}
-#mic{width:60px;height:60px;border-radius:50%;border:2px solid var(--pu);background:radial-gradient(circle,#2a6ad0,#1a2a6a);color:#fff;font-size:24px;box-shadow:0 0 20px var(--pu)}
-#mic.on{box-shadow:0 0 30px var(--cy);border-color:var(--cy)}
-</style>
-</head>
-<body>
-<canvas id="c"></canvas>
-<h1>VAYRA</h1>
-<div id="bar">
-  <input id="msg" placeholder="Type message and press Enter..." autocomplete="off">
-  <button id="mic">🎤</button>
-</div>
-<script>
-const cv=document.getElementById('c'),ctx=cv.getContext('2d');
-let W,H,D=Math.min(devicePixelRatio||1,2);
-function resize(){W=innerWidth;H=innerHeight;cv.width=W*D;cv.height=H*D;ctx.setTransform(D,0,0,D,0,0)}
-addEventListener('resize',resize);resize();
-
-// ---- Amplitude control: 0..1. Apni app mein window.setAmplitude(x) call karo ----
-let target=0,level=0,speaking=false,micOn=false,analyser=null,buf=null;
-window.setAmplitude=v=>{target=v};
-
-// ---- Sphere particles ----
-const N=1100,pts=[];
-for(let i=0;i<N;i++){
-  const y=1-2*(i+.5)/N,r=Math.sqrt(1-y*y),a=i*2.399963;
-  pts.push({x:Math.cos(a)*r,y,z:Math.sin(a)*r,s:Math.random()*6.28,p:Math.random()>.7})
-}
-
-function ring(cx,cy,r,w,col,rot,dash,gap,alpha){
-  ctx.save();ctx.translate(cx,cy);ctx.rotate(rot);
-  ctx.strokeStyle=col;ctx.globalAlpha=alpha;ctx.lineWidth=w;
-  ctx.setLineDash([dash,gap]);ctx.shadowColor=col;ctx.shadowBlur=12;
-  ctx.beginPath();ctx.arc(0,0,r,0,6.2832);ctx.stroke();ctx.restore();
-}
-
-let t=0;
-function frame(){
-  t+=.016;
-  // mic se amplitude
-  if(micOn&&analyser){
-    analyser.getByteTimeDomainData(buf);
-    let s=0;for(const v of buf){const d=(v-128)/128;s+=d*d}
-    target=Math.min(1,Math.sqrt(s/buf.length)*5);
-  }else if(speaking){
-    target=.35+.65*Math.abs(Math.sin(t*9)*Math.sin(t*5.3+1)); // fake lip-sync
-  }else target=0;
-  level+=(target-level)*.15;
-
-  ctx.clearRect(0,0,W,H);
-  const cx=W/2,cy=H*.5,R=Math.min(W,H*.6)*.46,boost=1+level*2.5;
-
-  // glow
-  const g=ctx.createRadialGradient(cx,cy,0,cx,cy,R*1.1);
-  g.addColorStop(0,`rgba(34,230,224,${.12+level*.3})`);g.addColorStop(1,'rgba(0,0,0,0)');
-  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
-
-  // rings
-  ring(cx,cy,R*1.62,3,'#22e6e0',0,2000,0,.95);
-  ring(cx,cy,R*1.5,1.5,'#22e6e0',t*.3*boost,3,9,.7);
-  ring(cx,cy,R*1.38,2,'#3b82f6',-t*.4*boost,260,40,.9);
-  ring(cx,cy,R*1.28,2,'#8b7cf6',t*.6*boost,160,60,.9);
-  ring(cx,cy,R*1.18,1.5,'#22e6e0',-t*.9*boost,40,20,.8+level*.2);
-  ring(cx,cy,R*.62+level*8,3,'#22e6e0',t*1.2*boost,90,50,.95);
-  ring(cx,cy,R*.4+level*6,2,'#8b7cf6',-t*1.6*boost,50,30,.9);
-
-  // sphere
-  const ry=t*.35*(1+level*2),cs=Math.cos(ry),sn=Math.sin(ry);
-  const list=[];
-  for(const p of pts){
-    const wob=1+level*.22*Math.sin(t*8+p.s*3)+level*.06*Math.sin(p.s*7+t*3);
-    const x=(p.x*cs+p.z*sn)*wob,z=(-p.x*sn+p.z*cs)*wob,y=p.y*wob;
-    list.push([x,y,z,p.p]);
-  }
-  list.sort((a,b)=>a[2]-b[2]);
-  ctx.shadowBlur=0;ctx.setLineDash([]);
-  for(const [x,y,z,pp] of list){
-    const k=(z+1)/2;
-    ctx.globalAlpha=.25+k*.75;
-    ctx.fillStyle=pp?'#8b7cf6':'#22e6e0';
-    ctx.beginPath();ctx.arc(cx+x*R,cy+y*R,.6+k*1.3+level*.8,0,6.2832);ctx.fill();
-  }
-  ctx.globalAlpha=1;
-  requestAnimationFrame(frame);
-}
-frame();
-
-// ---- Bolna (text -> speech) ----
-const msg=document.getElementById('msg');
-msg.addEventListener('keydown',e=>{
-  if(e.key!=='Enter'||!msg.value.trim())return;
-  const u=new SpeechSynthesisUtterance(msg.value);u.lang='hi-IN';
-  u.onstart=()=>speaking=true;u.onend=u.onerror=()=>speaking=false;
-  speechSynthesis.cancel();speechSynthesis.speak(u);msg.value='';
-});
-
-// ---- Mic (sunna) ----
-document.getElementById('mic').onclick=async function(){
-  if(micOn){micOn=false;this.classList.remove('on');return}
-  try{
-    const st=await navigator.mediaDevices.getUserMedia({audio:true});
-    const ac=new (window.AudioContext||window.webkitAudioContext)();
-    analyser=ac.createAnalyser();analyser.fftSize=512;
-    ac.createMediaStreamSource(st).connect(analyser);
-    buf=new Uint8Array(analyser.fftSize);micOn=true;this.classList.add('on');
-  }catch(e){alert('Mic permission nahi mili')}
-};
-</script>
 </body>
 </html>
