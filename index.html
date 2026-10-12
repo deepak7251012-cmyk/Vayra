@@ -92,7 +92,13 @@ const store={get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch
 let cfg=Object.assign({key:'',name:'VAYRA',model:'meta-llama/llama-3.3-70b-instruct',lang:'hi-IN',always:true,smart:true,access:false,camera:false,mic:true,files:false,call:false,sms:false},store.get('v_cfg',{}));
 let mem=store.get('v_mem',[]),hist=store.get('v_hist',[]),rem=store.get('v_rem',[]),goals=store.get('v_goals',[]);
 let state='idle',emotion='happy',plan=[],planIdx=0;
-let isListening=false,busy=false,rec=null;
+let isListening=false,busy=false,rec=null,voiceReady=false;
+
+if('speechSynthesis' in window){
+  speechSynthesis.getVoices();
+  speechSynthesis.onvoiceschanged=()=>{speechSynthesis.getVoices();voiceReady=true};
+  setTimeout(()=>{speechSynthesis.getVoices();voiceReady=true},500);
+}
 
 function toast(t){const e=$('toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),2500)}
 function openM(id){
@@ -124,8 +130,7 @@ tick();setInterval(tick,1000);
 if(navigator.getBattery)navigator.getBattery().then(b=>{const u=()=>$('bat').textContent=Math.round(b.level*100)+'%';u();b.onlevelchange=u}).catch(()=>{});
 $('net').textContent=navigator.connection?.effectiveType?.toUpperCase()||(navigator.onLine?'ONLINE':'OFFLINE');
 
-function addLog(cls,text){/* Log hide - sirf sunai dega */}
-hist.forEach(h=>{});
+function addLog(cls,text){/* Log hide */}
 function clearChat(){hist=[];store.set('v_hist',hist);toast('Chat saaf')}
 
 window.STATES=['idle','listening','thinking','speaking'];
@@ -262,21 +267,29 @@ function listenLoop(){
   if(rec){try{rec.abort()}catch{}}
   rec=new SR();
   rec.lang=cfg.lang;
-  rec.continuous=false;
-  rec.interimResults=false;
+  rec.continuous=true;
+  rec.interimResults=true;
   rec.maxAlternatives=1;
   rec.onstart=()=>{setState('listening')};
-  rec.onspeechend=()=>{try{rec.abort()}catch{}};
-  rec.onaudiostart=()=>{};rec.onaudioend=()=>{};
-  rec.onsoundstart=()=>{};rec.onsoundend=()=>{};
   rec.onresult=e=>{
-    const text=e.results[0][0].transcript;
-    if(text.trim())ask(text);
-    else setTimeout(()=>listenLoop(),300);
+    let finalText='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal) finalText+=e.results[i][0].transcript;
+    }
+    if(finalText.trim()){
+      ask(finalText.trim());
+    }
   };
-  rec.onerror=()=>{if(isListening&&!busy)setTimeout(()=>listenLoop(),500)};
-  rec.onend=()=>{if(isListening&&!busy&&state==='listening')setTimeout(()=>listenLoop(),300)};
-  try{rec.start()}catch{setTimeout(()=>listenLoop(),500)}
+  rec.onerror=(ev)=>{
+    if(ev.error==='no-speech'||ev.error==='aborted'){return}
+    setTimeout(()=>{if(isListening&&!busy)listenLoop()},1000);
+  };
+  rec.onend=()=>{
+    if(isListening&&!busy){
+      setTimeout(()=>listenLoop(),300);
+    }
+  };
+  try{rec.start()}catch{setTimeout(()=>listenLoop(),1000)}
 }
 
 function speak(t){
@@ -287,6 +300,7 @@ function speak(t){
   const voices=speechSynthesis.getVoices();
   const femaleVoice=voices.find(v=>v.lang===cfg.lang && (v.name.includes('female')||v.name.includes('Google')||v.name.includes('Lekha')||v.name.includes('Swara')||v.name.includes('Heera')));
   if(femaleVoice)u.voice=femaleVoice;
+  else if(voices.length>0)u.voice=voices[0];
   u.onstart=()=>setState('speaking');
   u.onend=u.onerror=()=>{setState('idle');resumeListening()};
   speechSynthesis.speak(u);
@@ -469,11 +483,11 @@ cv.addEventListener('touchstart',e=>{
 cv.addEventListener('touchmove',e=>{
   if(e.touches.length===2&&initialDist>0){
     const dist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
-    const scale=Math.max(0.4,Math.min(3.5,initialScale*(dist/initialDist)));
+    const scale=Math.max(0.15,Math.min(10,initialScale*(dist/initialDist)));
     group.scale.setScalar(scale);
     group.children.forEach(c=>{
       if(c.material && c.material.uniforms && c.material.uniforms.level) {
-        c.material.uniforms.level.value=Math.min(1,scale*0.4);
+        c.material.uniforms.level.value=Math.min(1,scale*0.3);
       }
     });
     e.preventDefault();
@@ -505,6 +519,7 @@ function frame(){
   const pulse=1+Math.sin(t*3)*.1*E;
   LV.value=level;MD.value=oState==='listening'?-1:oState==='speaking'?1:.4;
   orbS.rotation.y=t*.3*(1+E*2);orbS.rotation.x=Math.sin(t*.2)*.15;orbS.scale.setScalar(1+charge*.22);
+  if(group.scale.x>2){LV.value=Math.min(1,group.scale.x*0.3)}
   nuc.scale.setScalar(1+level*.5+.05*Math.sin(t*3)+charge*.4);nuc.rotation.y=t*.8;
   const pc=pal(.1,tc).clone();
 
