@@ -19,12 +19,7 @@ h1{text-align:center;font-weight:300;letter-spacing:.35em;font-size:26px;margin:
 #plan .p{padding:4px 8px;border-left:2px solid var(--c3);background:#0d0a22;border-radius:6px}
 #plan .p.done{opacity:.5;text-decoration:line-through}
 #plan .p.now{border-color:var(--c1);color:var(--c1)}
-#log{max-height:30vh;overflow-y:auto;margin:6px 0;display:flex;flex-direction:column;gap:5px}
-.m{padding:7px 11px;border-radius:12px;font-size:13px;max-width:85%;line-height:1.4;white-space:pre-wrap}
-.user{align-self:flex-end;background:#0c2a3a;border:1px solid #22e6e055}
-.ai{align-self:flex-start;background:#13112b;border:1px solid #8b7cf655}
-.sys{align-self:center;color:#f88;font-size:12px}
-.tool{align-self:flex-start;color:#8fe;font-size:11px;font-style:italic}
+#log{display:none}
 nav{display:flex;justify-content:space-around;margin-top:8px}
 nav button{background:none;border:none;color:#8fe;font-size:11px;display:flex;flex-direction:column;gap:2px;align-items:center}
 nav i{font-style:normal;font-size:20px}
@@ -129,9 +124,9 @@ tick();setInterval(tick,1000);
 if(navigator.getBattery)navigator.getBattery().then(b=>{const u=()=>$('bat').textContent=Math.round(b.level*100)+'%';u();b.onlevelchange=u}).catch(()=>{});
 $('net').textContent=navigator.connection?.effectiveType?.toUpperCase()||(navigator.onLine?'ONLINE':'OFFLINE');
 
-function addLog(cls,text){const d=document.createElement('div');d.className='m '+cls;d.textContent=text;$('log').append(d);while($('log').children.length>40)$('log').firstChild.remove();$('log').scrollTop=1e9}
-hist.forEach(h=>addLog(h.role==='user'?'user':'ai',h.content));
-function clearChat(){hist=[];store.set('v_hist',hist);$('log').innerHTML='';toast('Chat saaf')}
+function addLog(cls,text){/* Log hide - sirf sunai dega */}
+hist.forEach(h=>{});
+function clearChat(){hist=[];store.set('v_hist',hist);toast('Chat saaf')}
 
 window.STATES=['idle','listening','thinking','speaking'];
 function setState(s){
@@ -151,13 +146,13 @@ const tools={
   calc(expr){try{const r=Function('"use strict";return('+String(expr).replace(/[^0-9+\-*/(). %]/g,'')+')')();return String(r)}catch{return 'Calc samajh nahi aaya'}},
   timer(min,text){addReminder(+min,String(text||'Timer khatam'));return `${min} minute ka timer: ${text||'Timer'}`},
   alarm(hhmm,text){const[h,m]=hhmm.split(':').map(Number);const n=new Date(),t=new Date();t.setHours(h,m,0,0);if(t<n)t.setDate(t.getDate()+1);addReminder(Math.round((t-n)/60000),text||'Alarm: '+hhmm);return `${hhmm} ka alarm set.`},
-  remember(f){if(f&&!mem.includes(f)){mem.push(String(f));mem=mem.slice(-50);store.set('v_mem',mem);return `Yaad rakh liya: ${f}`}return 'Pehle se yaad hai'},
+  remember(f){if(f&&!mem.includes(f)){mem.push(String(f));mem=mem.slice(-200);store.set('v_mem',mem);return `Yaad rakh liya: ${f}`}return 'Pehle se yaad hai'},
   recall(){return mem.length?'Yaad hai: '+mem.join('; '):'Kuch yaad nahi'},
   forget(f){const i=mem.findIndex(x=>x.toLowerCase().includes(String(f).toLowerCase()));if(i>-1){mem.splice(i,1);store.set('v_mem',mem);return 'Bhula diya'}return 'Nahi mila'},
   goal(g){if(g){goals.push({text:String(g),done:false,at:Date.now()});store.set('v_goals',goals);return `Goal add: ${g}`}return goals.length?'Goals: '+goals.map((x,i)=>`${i+1}. ${x.text}${x.done?' ✅':''}`).join(' | '):'Koi goal nahi'},
   goalDone(i){const g=goals[+i-1];if(g){g.done=true;store.set('v_goals',goals);return `Goal complete: ${g.text} 🎉`}return 'Goal nahi mila'},
   joke(){const j=['Programmer ki shaadi mein sabne commit kiya! 😄','WiFi ne WiFi se shaadi ki, connection achha tha! 📶','AI ki favorite chai? Neural-tea! ☕'];return j[Math.floor(Math.random()*j.length)]},
-  motivate(){const m=['Tum kar sakte ho! 💪 Ek chhota step aaj hi lo.','Har bada kaam ek chhote step se shuru hota hai.','Failure sirf feedback hai, aage badho!','Discipline > Motivation. Aaj 10 minute kaam kar lo.'];return m[Math.floor(Math.random()*m.length)]},
+  motivate(){const m=['Boss, tum kar sakte ho! 💪 Ek chhota step aaj hi lo.','Har bada kaam ek chhote step se shuru hota hai.','Failure sirf feedback hai, aage badho!','Discipline > Motivation. Aaj 10 minute kaam kar lo.'];return m[Math.floor(Math.random()*m.length)]},
   summary(){const u=hist.filter(h=>h.role==='user').slice(-5).map(h=>h.content);return u.length?'Recent: '+u.join(' | '):'Abhi koi baat nahi hui'}
 };
 function runTool(name,args){const fn=tools[name];if(!fn)return `Tool "${name}" nahi hai.`;try{return fn(...args)}catch(e){return 'Tool error: '+e.message}}
@@ -166,26 +161,22 @@ function renderPlan(){const p=$('plan');if(!plan.length){p.style.display='none';
 
 async function ask(text){
   text=text.trim();if(!text)return;
-  addLog('user',text);
   if(!cfg.key){toast('Pehle API key daalo');openM('set');return}
   setState('thinking');
   pauseListening();
-  hist.push({role:'user',content:text});hist=hist.slice(-12);
+  hist.push({role:'user',content:text});hist=hist.slice(-200);
 
   if(cfg.smart){
     try{
       plan=await makePlan(text);planIdx=0;renderPlan();
-      if(plan.length>1)addLog('tool','🧠 Plan: '+plan.join(' → '));
       let toolResults=[];
       for(let i=0;i<plan.length;i++){
         planIdx=i;renderPlan();
         const step=plan[i];
         const tm=step.match(/^tool:(\w+)\s*(.*)$/);
         if(tm){
-          addLog('tool','⚙️ '+tm[1]+'...');
           const res=runTool(tm[1],tm[2]?tm[2].split('|').map(s=>s.trim()):[]);
           toolResults.push({tool:tm[1],result:res});
-          addLog('tool','↳ '+res);
         }
         await new Promise(r=>setTimeout(r,300));
       }
@@ -216,9 +207,9 @@ Reply ONLY with a JSON array of strings, no other text.`;
 }
 
 async function finalAnswer(toolResults){
-  const sys=`You are ${cfg.name}, a warm, playful, smart personal AI agent. Talk in simple Hinglish like a close friend, 1-3 short sentences.
+  const sys=`You are ${cfg.name}, a warm, caring, playful AI assistant. You call the user "boss" with love, like a caring daughter. Talk in simple Hinglish. Be affectionate. Remember everything about boss. Keep replies short (1-3 sentences).
 Current time: ${new Date().toString()}.
-Known facts about user: ${mem.join('; ')||'none'}.
+Known facts about boss: ${mem.join('; ')||'none'}.
 ${toolResults.length?'Tool results:\n'+toolResults.map(t=>`${t.tool}:${t.result}`).join('\n'):''}
 Reply ONLY with JSON: {"reply":"...","emotion":"happy|sad|angry|calm|excited|love","remember":null or "short durable fact","reminder":null or {"minutes":number,"text":"..."}}`;
   const raw=await callAI([{role:'system',content:sys},...hist],0.7);
@@ -228,25 +219,25 @@ Reply ONLY with JSON: {"reply":"...","emotion":"happy|sad|angry|calm|excited|lov
 }
 
 async function simpleAnswer(){
-  const sys=`You are ${cfg.name}, a warm, playful personal AI assistant. Talk in simple Hinglish like a close friend, 1-3 short sentences. Current time: ${new Date().toString()}. Known facts: ${mem.join('; ')||'none'}.
+  const sys=`You are ${cfg.name}, a warm, caring, playful AI assistant. You call the user "boss" with love, like a caring daughter. Talk in simple Hinglish. Be affectionate. Remember everything about boss. Keep replies short (1-3 sentences). Current time: ${new Date().toString()}. Known facts: ${mem.join('; ')||'none'}.
 Reply ONLY with JSON: {"reply":"...","emotion":"happy|sad|angry|calm|excited|love","remember":null or "fact","reminder":null or {"minutes":number,"text":"..."}}`;
   try{
     const raw=await callAI([{role:'system',content:sys},...hist],0.7);
     let o;try{o=JSON.parse(raw.match(/\{[\s\S]*\}/)[0])}catch{o={reply:raw}}
     handleMeta(o);
     finishTurn(String(o.reply||raw));
-  }catch(e){setState('idle');addLog('sys','Error: '+e.message);resumeListening()}
+  }catch(e){setState('idle');resumeListening()}
 }
 
 function handleMeta(o){
   if(o.emotion)setEmotion(o.emotion);
-  if(o.remember&&!mem.includes(o.remember)){mem.push(String(o.remember));mem=mem.slice(-50);store.set('v_mem',mem)}
+  if(o.remember&&!mem.includes(o.remember)){mem.push(String(o.remember));mem=mem.slice(-200);store.set('v_mem',mem)}
   if(o.reminder&&+o.reminder.minutes>0)addReminder(+o.reminder.minutes,String(o.reminder.text||'Yaad dilana'));
 }
 
 function finishTurn(reply){
-  hist.push({role:'assistant',content:reply});hist=hist.slice(-12);store.set('v_hist',hist);
-  addLog('ai',reply);speak(reply);
+  hist.push({role:'assistant',content:reply});hist=hist.slice(-200);store.set('v_hist',hist);
+  speak(reply);
 }
 
 function startAlwaysListen(){
@@ -274,7 +265,10 @@ function listenLoop(){
   rec.continuous=false;
   rec.interimResults=false;
   rec.maxAlternatives=1;
-  rec.onstart=()=>setState('listening');
+  rec.onstart=()=>{setState('listening')};
+  rec.onspeechend=()=>{try{rec.abort()}catch{}};
+  rec.onaudiostart=()=>{};rec.onaudioend=()=>{};
+  rec.onsoundstart=()=>{};rec.onsoundend=()=>{};
   rec.onresult=e=>{
     const text=e.results[0][0].transcript;
     if(text.trim())ask(text);
@@ -289,8 +283,10 @@ function speak(t){
   if(!('speechSynthesis' in window)){setState('idle');resumeListening();return}
   speechSynthesis.cancel();
   const u=new SpeechSynthesisUtterance(t);
-  u.lang=cfg.lang;u.rate=1.15;u.pitch=1.05;u.volume=1.0;
-  const v=speechSynthesis.getVoices().find(v=>v.lang===cfg.lang);if(v)u.voice=v;
+  u.lang=cfg.lang;u.rate=0.95;u.pitch=1.4;u.volume=0.9;
+  const voices=speechSynthesis.getVoices();
+  const femaleVoice=voices.find(v=>v.lang===cfg.lang && (v.name.includes('female')||v.name.includes('Google')||v.name.includes('Lekha')||v.name.includes('Swara')||v.name.includes('Heera')));
+  if(femaleVoice)u.voice=femaleVoice;
   u.onstart=()=>setState('speaking');
   u.onend=u.onerror=()=>{setState('idle');resumeListening()};
   speechSynthesis.speak(u);
@@ -321,7 +317,7 @@ function schedule(r){
   setTimeout(()=>{
     if(!rem.some(x=>x.id===r.id))return;
     rem=rem.filter(x=>x.id!==r.id);store.set('v_rem',rem);
-    const t='Yaad dilana: '+r.text;addLog('ai',t);speak(t);
+    const t='Boss, yaad dilana: '+r.text;speak(t);
     if('Notification' in window&&Notification.permission==='granted')new Notification(cfg.name,{body:r.text});
   },Math.max(r.at-Date.now(),0));
 }
@@ -453,11 +449,17 @@ cv.addEventListener('pointermove',e=>{if(!down)return;const dx=e.clientX-lx,dy=e
 cv.addEventListener('pointerup',()=>{
   down=false;
   if(charge>.3){surge();addWave()}
-  else if(!moved)surge();
+  else if(!moved){
+    surge();
+    const reactions=['arre boss! kya hua?','hmm boss!','haan boss bolo','kya baat hai boss?','ouch boss!','bolo na boss'];
+    const r=reactions[Math.floor(Math.random()*reactions.length)];
+    if(typeof speak==='function')speak(r);
+    if(typeof setEmotion==='function')setEmotion('excited');
+  }
   charge=0;
 });
 
-// Pinch to zoom
+// Pinch to zoom + andar tak
 let initialDist=0,initialScale=1;
 cv.addEventListener('touchstart',e=>{
   if(e.touches.length===2){
@@ -468,8 +470,13 @@ cv.addEventListener('touchstart',e=>{
 cv.addEventListener('touchmove',e=>{
   if(e.touches.length===2&&initialDist>0){
     const dist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
-    const scale=Math.max(0.5,Math.min(2.5,initialScale*(dist/initialDist)));
+    const scale=Math.max(0.4,Math.min(3.5,initialScale*(dist/initialDist)));
     group.scale.setScalar(scale);
+    group.children.forEach(c=>{
+      if(c.material && c.material.uniforms && c.material.uniforms.level) {
+        c.material.uniforms.level.value=Math.min(1,scale*0.4);
+      }
+    });
     e.preventDefault();
   }
 },{passive:false});
