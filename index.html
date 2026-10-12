@@ -19,17 +19,12 @@ h1{text-align:center;font-weight:300;letter-spacing:.35em;font-size:26px;margin:
 #plan .p{padding:4px 8px;border-left:2px solid var(--c3);background:#0d0a22;border-radius:6px}
 #plan .p.done{opacity:.5;text-decoration:line-through}
 #plan .p.now{border-color:var(--c1);color:var(--c1)}
-#log{max-height:26vh;overflow-y:auto;margin:6px 0;display:flex;flex-direction:column;gap:5px}
+#log{max-height:30vh;overflow-y:auto;margin:6px 0;display:flex;flex-direction:column;gap:5px}
 .m{padding:7px 11px;border-radius:12px;font-size:13px;max-width:85%;line-height:1.4;white-space:pre-wrap}
 .user{align-self:flex-end;background:#0c2a3a;border:1px solid #22e6e055}
 .ai{align-self:flex-start;background:#13112b;border:1px solid #8b7cf655}
 .sys{align-self:center;color:#f88;font-size:12px}
 .tool{align-self:flex-start;color:#8fe;font-size:11px;font-style:italic}
-.bar{display:flex;gap:10px;align-items:center;justify-content:center;margin-top:10px}
-#mic{width:80px;height:80px;border-radius:50%;border:2px solid var(--c3);background:radial-gradient(circle,#2a6ad0,#1a2a6a);font-size:32px;color:#fff;box-shadow:0 0 25px var(--c3);transition:.2s}
-#mic.on{border-color:var(--c1);box-shadow:0 0 40px var(--c1);animation:micPulse 1s infinite}
-#mic.speaking{border-color:var(--c2);box-shadow:0 0 40px var(--c2)}
-@keyframes micPulse{0%,100%{box-shadow:0 0 25px var(--c1)}50%{box-shadow:0 0 45px var(--c1)}}
 nav{display:flex;justify-content:space-around;margin-top:8px}
 nav button{background:none;border:none;color:#8fe;font-size:11px;display:flex;flex-direction:column;gap:2px;align-items:center}
 nav i{font-style:normal;font-size:20px}
@@ -59,9 +54,6 @@ nav i{font-style:normal;font-size:20px}
 <div id="state">READY 🎧</div>
 <div id="plan"></div>
 <div id="log"></div>
-<div class="bar">
-  <button id="mic">🎤</button>
-</div>
 <nav>
   <button onclick="openM('set')"><i>⚙️</i>Settings</button>
   <button onclick="showMem()"><i>🧠</i>Memory</button>
@@ -70,7 +62,6 @@ nav i{font-style:normal;font-size:20px}
   <button onclick="clearChat()"><i>🗑️</i>Clear</button>
 </nav>
 
-<!-- SETTINGS MODAL (Chat bhi yahan hai) -->
 <div class="modal" id="set">
   <div class="mh"><h2>SETTINGS</h2><button class="x" onclick="closeM('set')">✕</button></div>
   <div class="f"><label>🔑 OpenRouter API Key</label><input type="password" id="s-key" placeholder="sk-or-v1-..."></div>
@@ -78,8 +69,16 @@ nav i{font-style:normal;font-size:20px}
   <div class="f"><label>👤 Naam</label><input id="s-name"></div>
   <div class="f"><label>🤖 Model</label><input id="s-model"></div>
   <div class="f"><label>🔊 Bhasha</label><select id="s-lang"><option value="hi-IN">हिंदी</option><option value="en-IN">English</option></select></div>
-  <div class="f row"><label>🎙️ Always-Listen</label><input type="checkbox" id="s-always"></div>
+  <div class="f row"><label>🎙️ Always-Listen (mic ON)</label><input type="checkbox" id="s-always"></div>
   <div class="f row"><label>🧠 Smart mode</label><input type="checkbox" id="s-smart"></div>
+  <hr style="border-color:#22e6e033;margin:12px 0">
+  <div class="f row"><label>📱 Accessibility</label><input type="checkbox" id="s-access"></div>
+  <div class="f row"><label>📸 Camera Permission</label><input type="checkbox" id="s-camera"></div>
+  <div class="f row"><label>🎤 Mic Permission</label><input type="checkbox" id="s-mic" checked></div>
+  <div class="f row"><label>📂 File Access</label><input type="checkbox" id="s-files"></div>
+  <div class="f row"><label>📞 Call Permission</label><input type="checkbox" id="s-call"></div>
+  <div class="f row"><label>💬 SMS Permission</label><input type="checkbox" id="s-sms"></div>
+  <hr style="border-color:#22e6e033;margin:12px 0">
   <div class="f"><label>💬 Chat (yahan likho)</label><input id="chat-inline" placeholder="Kuch likho..."></div>
   <button class="btn" onclick="sendInlineChat()" style="background:#22e6e033;">📩 भेजो</button>
   <button class="btn" onclick="saveCfg()">💾 Save</button>
@@ -95,16 +94,24 @@ nav i{font-style:normal;font-size:20px}
 <script>
 const $=id=>document.getElementById(id);
 const store={get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}}};
-let cfg=Object.assign({key:'',name:'VAYRA',model:'meta-llama/llama-3.3-70b-instruct',lang:'hi-IN',always:true,smart:true},store.get('v_cfg',{}));
+let cfg=Object.assign({key:'',name:'VAYRA',model:'meta-llama/llama-3.3-70b-instruct',lang:'hi-IN',always:true,smart:true,access:false,camera:false,mic:true,files:false,call:false,sms:false},store.get('v_cfg',{}));
 let mem=store.get('v_mem',[]),hist=store.get('v_hist',[]),rem=store.get('v_rem',[]),goals=store.get('v_goals',[]);
 let state='idle',emotion='happy',plan=[],planIdx=0;
 let isListening=false,busy=false,rec=null;
 
 function toast(t){const e=$('toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),2500)}
-function openM(id){if(id==='set'){$('s-key').value=cfg.key;$('s-name').value=cfg.name;$('s-model').value=cfg.model;$('s-lang').value=cfg.lang;$('s-always').checked=cfg.always;$('s-smart').checked=cfg.smart}$(id).classList.add('open')}
+function openM(id){
+  if(id==='set'){
+    $('s-key').value=cfg.key;$('s-name').value=cfg.name;$('s-model').value=cfg.model;
+    $('s-lang').value=cfg.lang;$('s-always').checked=cfg.always;$('s-smart').checked=cfg.smart;
+    $('s-access').checked=cfg.access;$('s-camera').checked=cfg.camera;$('s-mic').checked=cfg.mic;
+    $('s-files').checked=cfg.files;$('s-call').checked=cfg.call;$('s-sms').checked=cfg.sms;
+  }
+  $(id).classList.add('open')
+}
 function closeM(id){$(id).classList.remove('open')}
 function saveCfg(){
-  cfg={key:$('s-key').value.trim(),name:$('s-name').value.trim()||'VAYRA',model:$('s-model').value.trim(),lang:$('s-lang').value,always:$('s-always').checked,smart:$('s-smart').checked};
+  cfg={key:$('s-key').value.trim(),name:$('s-name').value.trim()||'VAYRA',model:$('s-model').value.trim(),lang:$('s-lang').value,always:$('s-always').checked,smart:$('s-smart').checked,access:$('s-access').checked,camera:$('s-camera').checked,mic:$('s-mic').checked,files:$('s-files').checked,call:$('s-call').checked,sms:$('s-sms').checked};
   store.set('v_cfg',cfg);$('title').textContent=cfg.name.toUpperCase();toast('Saved ✨');closeM('set');
   if(cfg.always)startAlwaysListen();else stopAlwaysListen();
 }
@@ -117,23 +124,19 @@ function sendInlineChat(){
 }
 $('title').textContent=cfg.name.toUpperCase();
 
-// ---------- Clock ----------
 function tick(){const n=new Date();$('time').textContent=n.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});$('date').textContent=n.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}).toUpperCase()}
 tick();setInterval(tick,1000);
 if(navigator.getBattery)navigator.getBattery().then(b=>{const u=()=>$('bat').textContent=Math.round(b.level*100)+'%';u();b.onlevelchange=u}).catch(()=>{});
 $('net').textContent=navigator.connection?.effectiveType?.toUpperCase()||(navigator.onLine?'ONLINE':'OFFLINE');
 
-// ---------- Log ----------
 function addLog(cls,text){const d=document.createElement('div');d.className='m '+cls;d.textContent=text;$('log').append(d);while($('log').children.length>40)$('log').firstChild.remove();$('log').scrollTop=1e9}
 hist.forEach(h=>addLog(h.role==='user'?'user':'ai',h.content));
 function clearChat(){hist=[];store.set('v_hist',hist);$('log').innerHTML='';toast('Chat saaf')}
 
-// ---------- State & Orb Bridge ----------
 window.STATES=['idle','listening','thinking','speaking'];
 function setState(s){
   state=s;
   $('state').textContent=(cfg.always&&s==='idle')?'READY 🎧':s.toUpperCase();
-  $('mic').className=s==='listening'?'on':s==='speaking'?'speaking':'';
   if(typeof window.setOrbState==='function')window.setOrbState(s);
 }
 function setEmotion(e){
@@ -141,7 +144,6 @@ function setEmotion(e){
   if(typeof window.setOrbEmotion==='function')window.setOrbEmotion(e);
 }
 
-// ---------- Tools ----------
 const tools={
   time(){const n=new Date();return `Abhi ${n.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})} hai.`},
   date(){return new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'})},
@@ -160,10 +162,8 @@ const tools={
 };
 function runTool(name,args){const fn=tools[name];if(!fn)return `Tool "${name}" nahi hai.`;try{return fn(...args)}catch(e){return 'Tool error: '+e.message}}
 
-// ---------- Plan UI ----------
 function renderPlan(){const p=$('plan');if(!plan.length){p.style.display='none';return}p.style.display='flex';p.innerHTML='';plan.forEach((s,i)=>{const d=document.createElement('div');d.className='p'+(i<planIdx?' done':i===planIdx?' now':'');d.textContent=(i<planIdx?'✓ ':i===planIdx?'▶ ':'')+s;p.append(d)});p.scrollTop=1e9}
 
-// ---------- AI Agent Loop ----------
 async function ask(text){
   text=text.trim();if(!text)return;
   addLog('user',text);
@@ -249,7 +249,6 @@ function finishTurn(reply){
   addLog('ai',reply);speak(reply);
 }
 
-// ---------- Always-Listen ----------
 function startAlwaysListen(){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){toast('Is browser mein voice nahi hai');return}
@@ -286,12 +285,6 @@ function listenLoop(){
   try{rec.start()}catch{setTimeout(()=>listenLoop(),500)}
 }
 
-$('mic').onclick=()=>{
-  if(state==='speaking'){speechSynthesis.cancel();setState('idle');resumeListening();return}
-  if(isListening){stopAlwaysListen()}else{startAlwaysListen()}
-};
-
-// ---------- TTS ----------
 function speak(t){
   if(!('speechSynthesis' in window)){setState('idle');resumeListening();return}
   speechSynthesis.cancel();
@@ -303,7 +296,6 @@ function speak(t){
   speechSynthesis.speak(u);
 }
 
-// ---------- Memory / Reminders / Goals ----------
 function showList(title,arr,del){
   $('it').textContent=title;const b=$('ib');b.innerHTML='';
   if(!arr.length)b.textContent='Abhi kuch nahi hai...';
@@ -335,7 +327,7 @@ function schedule(r){
 }
 rem.forEach(schedule);
 
-if(cfg.always)setTimeout(()=>startAlwaysListen(),500);
+setTimeout(()=>{ if(cfg.always !== false) startAlwaysListen(); }, 500);
 </script>
 
 <!-- ============ 3D ORB ============ -->
@@ -356,7 +348,12 @@ const cur=EMO.happy.map(V),tgt=EMO.happy.map(V);
 function pal(x,o){x=(((x%1)+1)%1)*4;const i=Math.floor(x),f=x-i;return o.copy(cur[i%4]).lerp(cur[(i+1)%4],f)}
 
 function setOrbState(s){if(window.STATES.includes(s))oState=s}
-function setOrbEmotion(e){if(EMO[e])EMO[e].forEach((c,i)=>tgt[i].copy(V(c)))}
+function setOrbEmotion(e){
+  if(EMO[e]){
+    EMO[e].forEach((c,i)=>tgt[i].copy(V(c)));
+    EMO[e].forEach((c,i)=>cur[i].copy(V(c)));
+  }
+}
 window.setOrbState=setOrbState;window.setOrbEmotion=setOrbEmotion;
 
 const U={time:{value:0},energy:{value:0},c:{value:cur}};
@@ -460,6 +457,24 @@ cv.addEventListener('pointerup',()=>{
   charge=0;
 });
 
+// Pinch to zoom
+let initialDist=0,initialScale=1;
+cv.addEventListener('touchstart',e=>{
+  if(e.touches.length===2){
+    initialDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+    initialScale=group.scale.x;
+  }
+},{passive:true});
+cv.addEventListener('touchmove',e=>{
+  if(e.touches.length===2&&initialDist>0){
+    const dist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+    const scale=Math.max(0.5,Math.min(2.5,initialScale*(dist/initialDist)));
+    group.scale.setScalar(scale);
+    e.preventDefault();
+  }
+},{passive:false});
+cv.addEventListener('touchend',()=>{initialDist=0});
+
 const tc=new THREE.Vector3();
 function frame(){
   requestAnimationFrame(frame);
@@ -474,7 +489,7 @@ function frame(){
   if(down&&!moved){charge=Math.min(1,charge+.012);burst=Math.max(burst,.45+charge*.5)}
   if(oState==='idle'&&!down&&t>nextIdle){burst=Math.max(burst,.55);nextIdle=t+6+Math.random()*5}
   const E=Math.min(1,energy+burst),sp=1+E*3;tt+=dt*sp;
-  for(let i=0;i<4;i++)cur[i].lerp(tgt[i],.05);
+  for(let i=0;i<4;i++)cur[i].lerp(tgt[i],.15);
   U.time.value=tt;U.energy.value=E;
 
   if(!down){vy*=.95;vx*=.95;group.rotation.y+=vy+.0025;group.rotation.x+=vx;group.rotation.x*=.995}
