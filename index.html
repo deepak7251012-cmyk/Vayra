@@ -25,12 +25,11 @@ h1{text-align:center;font-weight:300;letter-spacing:.35em;font-size:26px;margin:
 .ai{align-self:flex-start;background:#13112b;border:1px solid #8b7cf655}
 .sys{align-self:center;color:#f88;font-size:12px}
 .tool{align-self:flex-start;color:#8fe;font-size:11px;font-style:italic}
-.bar{display:flex;gap:10px;align-items:center}
-#in{flex:1;background:var(--card);border:1px solid var(--c1);border-radius:12px;color:#fff;padding:12px;font-size:15px;outline:none}
-#mic{width:52px;height:52px;border-radius:50%;border:2px solid var(--c3);background:radial-gradient(circle,#2a6ad0,#1a2a6a);font-size:22px;color:#fff;box-shadow:0 0 18px var(--c3);transition:.2s}
-#mic.on{border-color:var(--c1);box-shadow:0 0 28px var(--c1);animation:micPulse 1s infinite}
-#mic.speaking{border-color:var(--c2);box-shadow:0 0 28px var(--c2)}
-@keyframes micPulse{0%,100%{box-shadow:0 0 20px var(--c1)}50%{box-shadow:0 0 35px var(--c1)}}
+.bar{display:flex;gap:10px;align-items:center;justify-content:center;margin-top:10px}
+#mic{width:80px;height:80px;border-radius:50%;border:2px solid var(--c3);background:radial-gradient(circle,#2a6ad0,#1a2a6a);font-size:32px;color:#fff;box-shadow:0 0 25px var(--c3);transition:.2s}
+#mic.on{border-color:var(--c1);box-shadow:0 0 40px var(--c1);animation:micPulse 1s infinite}
+#mic.speaking{border-color:var(--c2);box-shadow:0 0 40px var(--c2)}
+@keyframes micPulse{0%,100%{box-shadow:0 0 25px var(--c1)}50%{box-shadow:0 0 45px var(--c1)}}
 nav{display:flex;justify-content:space-around;margin-top:8px}
 nav button{background:none;border:none;color:#8fe;font-size:11px;display:flex;flex-direction:column;gap:2px;align-items:center}
 nav i{font-style:normal;font-size:20px}
@@ -61,7 +60,6 @@ nav i{font-style:normal;font-size:20px}
 <div id="plan"></div>
 <div id="log"></div>
 <div class="bar">
-  <input id="in" placeholder="Type message..." autocomplete="off">
   <button id="mic">🎤</button>
 </div>
 <nav>
@@ -72,6 +70,7 @@ nav i{font-style:normal;font-size:20px}
   <button onclick="clearChat()"><i>🗑️</i>Clear</button>
 </nav>
 
+<!-- SETTINGS MODAL (Chat bhi yahan hai) -->
 <div class="modal" id="set">
   <div class="mh"><h2>SETTINGS</h2><button class="x" onclick="closeM('set')">✕</button></div>
   <div class="f"><label>🔑 OpenRouter API Key</label><input type="password" id="s-key" placeholder="sk-or-v1-..."></div>
@@ -81,6 +80,8 @@ nav i{font-style:normal;font-size:20px}
   <div class="f"><label>🔊 Bhasha</label><select id="s-lang"><option value="hi-IN">हिंदी</option><option value="en-IN">English</option></select></div>
   <div class="f row"><label>🎙️ Always-Listen</label><input type="checkbox" id="s-always"></div>
   <div class="f row"><label>🧠 Smart mode</label><input type="checkbox" id="s-smart"></div>
+  <div class="f"><label>💬 Chat (yahan likho)</label><input id="chat-inline" placeholder="Kuch likho..."></div>
+  <button class="btn" onclick="sendInlineChat()" style="background:#22e6e033;">📩 भेजो</button>
   <button class="btn" onclick="saveCfg()">💾 Save</button>
 </div>
 
@@ -106,6 +107,13 @@ function saveCfg(){
   cfg={key:$('s-key').value.trim(),name:$('s-name').value.trim()||'VAYRA',model:$('s-model').value.trim(),lang:$('s-lang').value,always:$('s-always').checked,smart:$('s-smart').checked};
   store.set('v_cfg',cfg);$('title').textContent=cfg.name.toUpperCase();toast('Saved ✨');closeM('set');
   if(cfg.always)startAlwaysListen();else stopAlwaysListen();
+}
+function sendInlineChat(){
+  const v=$('chat-inline').value.trim();
+  if(!v)return;
+  $('chat-inline').value='';
+  closeM('set');
+  ask(v);
 }
 $('title').textContent=cfg.name.toUpperCase();
 
@@ -241,14 +249,11 @@ function finishTurn(reply){
   addLog('ai',reply);speak(reply);
 }
 
-$('in').addEventListener('keydown',e=>{if(e.key==='Enter'){const v=$('in').value;$('in').value='';ask(v)}});
-
 // ---------- Always-Listen ----------
 function startAlwaysListen(){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){toast('Is browser mein voice nahi hai');return}
   isListening=true;busy=false;
-  toast('Mic ON — bolte raho! 🎤✅');
   listenLoop();
 }
 function stopAlwaysListen(){
@@ -256,7 +261,6 @@ function stopAlwaysListen(){
   if(rec){try{rec.abort()}catch{}rec=null}
   busy=false;
   setState('idle');
-  toast('Mic OFF 🎤❌');
 }
 function pauseListening(){busy=true;if(rec){try{rec.abort()}catch{}rec=null}}
 function resumeListening(){busy=false;if(isListening&&cfg.always)setTimeout(()=>listenLoop(),400)}
@@ -320,7 +324,6 @@ function addReminder(min,text){
   const r={id:Date.now()+Math.random(),at:Date.now()+min*60000,text};
   rem.push(r);store.set('v_rem',rem);schedule(r);
   if('Notification' in window&&Notification.permission==='default')Notification.requestPermission();
-  toast('Reminder set: '+min+' min baad');
 }
 function schedule(r){
   setTimeout(()=>{
