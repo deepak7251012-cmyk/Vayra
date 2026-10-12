@@ -146,7 +146,7 @@ const tools={
   calc(expr){try{const r=Function('"use strict";return('+String(expr).replace(/[^0-9+\-*/(). %]/g,'')+')')();return String(r)}catch{return 'Calc samajh nahi aaya'}},
   timer(min,text){addReminder(+min,String(text||'Timer khatam'));return `${min} minute ka timer: ${text||'Timer'}`},
   alarm(hhmm,text){const[h,m]=hhmm.split(':').map(Number);const n=new Date(),t=new Date();t.setHours(h,m,0,0);if(t<n)t.setDate(t.getDate()+1);addReminder(Math.round((t-n)/60000),text||'Alarm: '+hhmm);return `${hhmm} ka alarm set.`},
-  remember(f){if(f&&!mem.includes(f)){mem.push(String(f));mem=mem.slice(-200);store.set('v_mem',mem);return `Yaad rakh liya: ${f}`}return 'Pehle se yaad hai'},
+  remember(f){if(f&&!mem.includes(f)){mem.push(String(f));mem=mem.slice(-50000);store.set('v_mem',mem);return `Yaad rakh liya: ${f}`}return 'Pehle se yaad hai'},
   recall(){return mem.length?'Yaad hai: '+mem.join('; '):'Kuch yaad nahi'},
   forget(f){const i=mem.findIndex(x=>x.toLowerCase().includes(String(f).toLowerCase()));if(i>-1){mem.splice(i,1);store.set('v_mem',mem);return 'Bhula diya'}return 'Nahi mila'},
   goal(g){if(g){goals.push({text:String(g),done:false,at:Date.now()});store.set('v_goals',goals);return `Goal add: ${g}`}return goals.length?'Goals: '+goals.map((x,i)=>`${i+1}. ${x.text}${x.done?' ✅':''}`).join(' | '):'Koi goal nahi'},
@@ -164,7 +164,7 @@ async function ask(text){
   if(!cfg.key){toast('Pehle API key daalo');openM('set');return}
   setState('thinking');
   pauseListening();
-  hist.push({role:'user',content:text});hist=hist.slice(-200);
+  hist.push({role:'user',content:text});hist=hist.slice(-50000);
 
   if(cfg.smart){
     try{
@@ -212,7 +212,7 @@ Current time: ${new Date().toString()}.
 Known facts about boss: ${mem.join('; ')||'none'}.
 ${toolResults.length?'Tool results:\n'+toolResults.map(t=>`${t.tool}:${t.result}`).join('\n'):''}
 Reply ONLY with JSON: {"reply":"...","emotion":"happy|sad|angry|calm|excited|love","remember":null or "short durable fact","reminder":null or {"minutes":number,"text":"..."}}`;
-  const raw=await callAI([{role:'system',content:sys},...hist],0.7);
+  const raw=await callAI([{role:'system',content:sys},...hist.slice(-30)],0.7);
   let o;try{o=JSON.parse(raw.match(/\{[\s\S]*\}/)[0])}catch{o={reply:raw}}
   handleMeta(o);
   return String(o.reply||raw);
@@ -222,7 +222,7 @@ async function simpleAnswer(){
   const sys=`You are ${cfg.name}, a warm, caring, playful AI assistant. You call the user "boss" with love, like a caring daughter. Talk in simple Hinglish. Be affectionate. Remember everything about boss. Keep replies short (1-3 sentences). Current time: ${new Date().toString()}. Known facts: ${mem.join('; ')||'none'}.
 Reply ONLY with JSON: {"reply":"...","emotion":"happy|sad|angry|calm|excited|love","remember":null or "fact","reminder":null or {"minutes":number,"text":"..."}}`;
   try{
-    const raw=await callAI([{role:'system',content:sys},...hist],0.7);
+    const raw=await callAI([{role:'system',content:sys},...hist.slice(-30)],0.7);
     let o;try{o=JSON.parse(raw.match(/\{[\s\S]*\}/)[0])}catch{o={reply:raw}}
     handleMeta(o);
     finishTurn(String(o.reply||raw));
@@ -231,12 +231,12 @@ Reply ONLY with JSON: {"reply":"...","emotion":"happy|sad|angry|calm|excited|lov
 
 function handleMeta(o){
   if(o.emotion)setEmotion(o.emotion);
-  if(o.remember&&!mem.includes(o.remember)){mem.push(String(o.remember));mem=mem.slice(-200);store.set('v_mem',mem)}
+  if(o.remember&&!mem.includes(o.remember)){mem.push(String(o.remember));mem=mem.slice(-50000);store.set('v_mem',mem)}
   if(o.reminder&&+o.reminder.minutes>0)addReminder(+o.reminder.minutes,String(o.reminder.text||'Yaad dilana'));
 }
 
 function finishTurn(reply){
-  hist.push({role:'assistant',content:reply});hist=hist.slice(-200);store.set('v_hist',hist);
+  hist.push({role:'assistant',content:reply});hist=hist.slice(-50000);store.set('v_hist',hist);
   speak(reply);
 }
 
@@ -459,7 +459,6 @@ cv.addEventListener('pointerup',()=>{
   charge=0;
 });
 
-// Pinch to zoom + andar tak
 let initialDist=0,initialScale=1;
 cv.addEventListener('touchstart',e=>{
   if(e.touches.length===2){
