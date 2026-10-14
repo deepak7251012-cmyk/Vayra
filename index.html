@@ -86,6 +86,8 @@ nav i{font-style:normal;font-size:20px}
 <div id="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<!-- ============================ APP SCRIPT ============================ -->
 <script>
 const $=id=>document.getElementById(id);
 const store={get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}}};
@@ -245,14 +247,17 @@ function finishTurn(reply){
   speak(reply);
 }
 
+// ---------- Always-Listen ----------
 function startAlwaysListen(){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){toast('Is browser mein voice nahi hai');return}
   isListening=true;busy=false;
+  startVoiceMeter();                       // <-- NAYA: aawaz naapna shuru
   listenLoop();
 }
 function stopAlwaysListen(){
   isListening=false;
+  stopVoiceMeter();                        // <-- NAYA: aawaz naapna band
   if(rec){try{rec.abort()}catch{}rec=null}
   busy=false;
   setState('idle');
@@ -272,6 +277,7 @@ function listenLoop(){
   rec.maxAlternatives=1;
   rec.onstart=()=>{setState('listening')};
   rec.onresult=e=>{
+    window.voiceBump=.7;                   // <-- NAYA: backup, bolte hi orb hilega
     let finalText='';
     for(let i=e.resultIndex;i<e.results.length;i++){
       if(e.results[i].isFinal) finalText+=e.results[i][0].transcript;
@@ -292,6 +298,7 @@ function listenLoop(){
   try{rec.start()}catch{setTimeout(()=>listenLoop(),1000)}
 }
 
+// ---------- Bolna (TTS) ----------
 function speak(t){
   if(!('speechSynthesis' in window)){setState('idle');resumeListening();return}
   speechSynthesis.cancel();
@@ -306,6 +313,7 @@ function speak(t){
   speechSynthesis.speak(u);
 }
 
+// ---------- Memory / Reminders / Goals ----------
 function showList(title,arr,del){
   $('it').textContent=title;const b=$('ib');b.innerHTML='';
   if(!arr.length)b.textContent='Abhi kuch nahi hai...';
@@ -331,20 +339,55 @@ function schedule(r){
   setTimeout(()=>{
     if(!rem.some(x=>x.id===r.id))return;
     rem=rem.filter(x=>x.id!==r.id);store.set('v_rem',rem);
-    const t='Boss, yaad dilana: '+r.text;speak(t);
+    speak('Yaad dilana: '+r.text);
     if('Notification' in window&&Notification.permission==='granted')new Notification(cfg.name,{body:r.text});
   },Math.max(r.at-Date.now(),0));
 }
 rem.forEach(schedule);
 
-setTimeout(()=>{ if(cfg.always !== false) startAlwaysListen(); }, 500);
+if(cfg.always)setTimeout(()=>startAlwaysListen(),500);
 </script>
 
-<!-- ============ 3D ORB ============ -->
+<!-- ============================ VOICE METER (NAYA) ============================ -->
+<script>
+const USE_MIC_METER=true;          // false karo agar phone par mic conflict ho
+let vmStream=null,vmCtx=null,vmAn=null,vmBuf=null,vmRaf=0,vmSmooth=0;
+window.voiceLevel=0;window.voiceBump=0;
+
+async function startVoiceMeter(){
+  if(!USE_MIC_METER||vmStream)return;
+  try{
+    vmStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});
+    vmCtx=new (window.AudioContext||window.webkitAudioContext)();
+    if(vmCtx.state==='suspended')vmCtx.resume();
+    vmAn=vmCtx.createAnalyser();vmAn.fftSize=512;vmAn.smoothingTimeConstant=.6;
+    vmCtx.createMediaStreamSource(vmStream).connect(vmAn);
+    vmBuf=new Uint8Array(vmAn.fftSize);
+    const loop=()=>{
+      if(!vmAn)return;
+      vmAn.getByteTimeDomainData(vmBuf);
+      let s=0;for(const v of vmBuf){const d=(v-128)/128;s+=d*d}
+      const rms=Math.sqrt(s/vmBuf.length);
+      const lvl=Math.min(1,Math.max(0,(rms-.015)*9));       // .015 = noise gate, 9 = gain
+      vmSmooth+=(lvl-vmSmooth)*(lvl>vmSmooth?.5:.12);        // jaldi upar, dheere neeche
+      window.voiceLevel=vmSmooth;
+      vmRaf=requestAnimationFrame(loop);
+    };
+    loop();
+  }catch(e){vmStream=null}   // mic na mile to bhi theek hai, backup (voiceBump) chalega
+}
+function stopVoiceMeter(){
+  cancelAnimationFrame(vmRaf);
+  if(vmStream)vmStream.getTracks().forEach(t=>t.stop());
+  if(vmCtx)try{vmCtx.close()}catch{}
+  vmStream=vmCtx=vmAn=null;vmSmooth=0;window.voiceLevel=0;
+}
+</script>
+
+<!-- ============================ 3D ORB ============================ -->
 <script>
 const cv=document.getElementById('orb');
 let oState='idle';
-
 const EMO={
   happy:[[34,230,224],[59,130,246],[139,124,246],[255,190,100]],
   sad:[[90,140,255],[60,90,200],[120,120,220],[70,160,220]],
@@ -356,28 +399,19 @@ const EMO={
 const V=c=>new THREE.Vector3(c[0]/255,c[1]/255,c[2]/255);
 const cur=EMO.happy.map(V),tgt=EMO.happy.map(V);
 function pal(x,o){x=(((x%1)+1)%1)*4;const i=Math.floor(x),f=x-i;return o.copy(cur[i%4]).lerp(cur[(i+1)%4],f)}
-
-function setOrbState(s){if(window.STATES.includes(s))oState=s}
-function setOrbEmotion(e){
-  if(EMO[e]){
-    EMO[e].forEach((c,i)=>tgt[i].copy(V(c)));
-    EMO[e].forEach((c,i)=>cur[i].copy(V(c)));
-  }
-}
+function setOrbState(s){if(STATES.includes(s))oState=s}
+function setOrbEmotion(e){if(EMO[e])EMO[e].forEach((c,i)=>tgt[i].copy(V(c)))}
 window.setOrbState=setOrbState;window.setOrbEmotion=setOrbEmotion;
 
 const U={time:{value:0},energy:{value:0},c:{value:cur}};
 const LV={value:0},MD={value:1},PS={value:300};
 const GP=`vec3 pal(float x){x=fract(x)*4.;int i=int(floor(x));float f=fract(x);vec3 a=c[0],b=c[1];if(i==1){a=c[1];b=c[2];}else if(i==2){a=c[2];b=c[3];}else if(i==3){a=c[3];b=c[0];}return mix(a,b,f);}`;
 const VS=`varying vec3 vP;varying vec3 vN;void main(){vP=position;vN=normalMatrix*normal;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`;
-
 const RING_FS=`uniform float time,energy,n,spin,ph,h;uniform vec3 c[4];varying vec3 vP;varying vec3 vN;${GP}
 void main(){float a=atan(vP.y,vP.x);float b=pow(.5+.5*sin(a*n-time*spin+ph),3.);vec3 col=pal(a/6.2832*.6+h+time*.03);float fr=pow(1.-abs(normalize(vN).z),2.);
 gl_FragColor=vec4(vec3(.03,.045,.09)+col*.07*fr+col*b*(.3+energy*.6)+col*fr*.12,1.);}`;
-
 const DASH_FS=`uniform float op,energy,k,h;uniform vec3 c[4];varying vec3 vP;varying vec3 vN;${GP}
 void main(){float a=atan(vP.y,vP.x)/6.2832+.5;if(fract(a*k)>.62)discard;gl_FragColor=vec4(pal(h)*(.8+energy*.4),op);}`;
-
 const PT_VS=`uniform float time,level,energy,mode,uScale;attribute float aPh;varying float vA;varying float vH;
 void main(){vec3 n=normalize(position);
 float rip=sin(n.y*7.-time*6.*mode)*level*.12;
@@ -387,11 +421,9 @@ vec3 p=position+n*(rip+nz+wb);vec3 vn=normalize(normalMatrix*n);
 vA=.25+.75*smoothstep(-.7,.9,vn.z);vH=n.y*.25+aPh*.04+time*.03;
 vec4 mv=modelViewMatrix*vec4(p,1.);
 gl_PointSize=(.05+level*.025)*uScale/(-mv.z)*(.7+.5*vA);gl_Position=projectionMatrix*mv;}`;
-
 const PT_FS=`uniform vec3 c[4];varying float vA;varying float vH;${GP}
 void main(){float r=length(gl_PointCoord-.5);if(r>.5)discard;float soft=smoothstep(.5,.1,r);
 gl_FragColor=vec4(mix(pal(vH),vec3(1.),.12),soft*vA*.9);}`;
-
 const NUC_FS=`uniform float time,level;uniform vec3 c[4];varying vec3 vP;varying vec3 vN;${GP}
 void main(){float fr=pow(1.-abs(normalize(vN).z),1.5);float s=.5+.5*sin(vP.x*14.+time*2.+sin(vP.y*11.-time*1.5)*2.+sin(vP.z*13.+time));
 vec3 col=pal(s*.5+time*.05);gl_FragColor=vec4(col*(.35+s*.4+level*.5)+col*fr*.5,.55+fr*.3);}`;
@@ -446,54 +478,17 @@ function init(){
 function resize(){
   const W=cv.clientWidth,H=cv.clientHeight;
   if(!W||!H||!renderer)return;
-  renderer.setSize(W,H,false);
-  PS.value=renderer.domElement.height*.5;
-  camera.aspect=W/H;
-  camera.position.set(0,0,Math.max(10,4.4/(Math.tan(.4363)*camera.aspect)));
-  camera.updateProjectionMatrix();
+  renderer.setSize(W,H,false);PS.value=renderer.domElement.height*.5;
+  camera.aspect=W/H;camera.position.set(0,0,Math.max(10,4.4/(Math.tan(.4363)*camera.aspect)));camera.updateProjectionMatrix();
 }
 window.addEventListener('resize',resize);
 
 let t=0,tt=0,level=0,energy=.1,burst=0,charge=0,shake=0,down=false,moved=false,lx=0,ly=0,vx=0,vy=0,nextIdle=6,centerRot=0,centerSpeed=0;
 function addWave(){const w=new THREE.Mesh(new THREE.RingGeometry(.98,1,96),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.5,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,depthWrite:false}));w.scale.setScalar(1.2);group.add(w);waves.push(w)}
 function surge(){burst=1;shake=1;addWave()}
-
 cv.addEventListener('pointerdown',e=>{down=true;moved=false;lx=e.clientX;ly=e.clientY});
 cv.addEventListener('pointermove',e=>{if(!down)return;const dx=e.clientX-lx,dy=e.clientY-ly;if(Math.abs(dx)+Math.abs(dy)>2)moved=true;vy=dx*.006;vx=dy*.006;lx=e.clientX;ly=e.clientY;group.rotation.y+=vy;group.rotation.x=Math.max(-1.1,Math.min(1.1,group.rotation.x+vx))});
-cv.addEventListener('pointerup',()=>{
-  down=false;
-  if(charge>.3){surge();addWave()}
-  else if(!moved){
-    surge();
-    const reactions=['arre boss! kya hua?','hmm boss!','haan boss bolo','kya baat hai boss?','ouch boss!','bolo na boss'];
-    const r=reactions[Math.floor(Math.random()*reactions.length)];
-    if(typeof speak==='function')speak(r);
-    if(typeof setEmotion==='function')setEmotion('excited');
-  }
-  charge=0;
-});
-
-let initialDist=0,initialScale=1;
-cv.addEventListener('touchstart',e=>{
-  if(e.touches.length===2){
-    initialDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
-    initialScale=group.scale.x;
-  }
-},{passive:true});
-cv.addEventListener('touchmove',e=>{
-  if(e.touches.length===2&&initialDist>0){
-    const dist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
-    const scale=Math.max(0.15,Math.min(10,initialScale*(dist/initialDist)));
-    group.scale.setScalar(scale);
-    group.children.forEach(c=>{
-      if(c.material && c.material.uniforms && c.material.uniforms.level) {
-        c.material.uniforms.level.value=Math.min(1,scale*0.3);
-      }
-    });
-    e.preventDefault();
-  }
-},{passive:false});
-cv.addEventListener('touchend',()=>{initialDist=0});
+cv.addEventListener('pointerup',()=>{down=false;if(charge>.3){surge();addWave()}else if(!moved)surge();charge=0});
 
 const tc=new THREE.Vector3();
 function frame(){
@@ -502,14 +497,22 @@ function frame(){
 
   let tl=0,te=.1,ts=0;
   if(oState==='speaking'){tl=.4+.6*Math.abs(Math.sin(t*9)*Math.sin(t*5.3+1));te=.8;ts=1.5;if(Math.random()<.05)addWave()}
-  else if(oState==='listening'){tl=.25+.15*Math.sin(t*4);te=.4;ts=.6}
+  else if(oState==='listening'){
+    // ===== NAYA: tumhari aawaz ke saath orb hilega =====
+    const vl=Math.max(window.voiceLevel||0,window.voiceBump||0);
+    window.voiceBump=(window.voiceBump||0)*.9;
+    tl=Math.max(.2+.1*Math.sin(t*4),vl*1.2);   // gola aawaz ke saath dhadkega
+    te=Math.max(.35,vl);                        // roshni aur energy badhegi
+    ts=.6+vl*2.5;                               // andar ki rings tez ghoomengi
+    if(vl>.45&&Math.random()<.08)addWave();     // zor se bolo to lehrein nikalengi
+  }
   else if(oState==='thinking'){tl=.15+.05*Math.sin(t*6);te=.3;ts=.3;if(Math.random()<.02)addWave()}
   level+=(tl-level)*.15;energy+=(te-energy)*.05;centerSpeed+=(ts-centerSpeed)*.03;centerRot+=centerSpeed*dt;
   burst*=.985;shake*=.9;
   if(down&&!moved){charge=Math.min(1,charge+.012);burst=Math.max(burst,.45+charge*.5)}
   if(oState==='idle'&&!down&&t>nextIdle){burst=Math.max(burst,.55);nextIdle=t+6+Math.random()*5}
   const E=Math.min(1,energy+burst),sp=1+E*3;tt+=dt*sp;
-  for(let i=0;i<4;i++)cur[i].lerp(tgt[i],.15);
+  for(let i=0;i<4;i++)cur[i].lerp(tgt[i],.05);
   U.time.value=tt;U.energy.value=E;
 
   if(!down){vy*=.95;vx*=.95;group.rotation.y+=vy+.0025;group.rotation.x+=vx;group.rotation.x*=.995}
@@ -519,7 +522,6 @@ function frame(){
   const pulse=1+Math.sin(t*3)*.1*E;
   LV.value=level;MD.value=oState==='listening'?-1:oState==='speaking'?1:.4;
   orbS.rotation.y=t*.3*(1+E*2);orbS.rotation.x=Math.sin(t*.2)*.15;orbS.scale.setScalar(1+charge*.22);
-  if(group.scale.x>2){LV.value=Math.min(1,group.scale.x*0.3)}
   nuc.scale.setScalar(1+level*.5+.05*Math.sin(t*3)+charge*.4);nuc.rotation.y=t*.8;
   const pc=pal(.1,tc).clone();
 
@@ -562,7 +564,6 @@ function frame(){
 
   renderer.render(scene,camera);
 }
-
 if(init()){resize();setOrbEmotion('happy');setOrbState('idle');frame()}
 </script>
 </body>
