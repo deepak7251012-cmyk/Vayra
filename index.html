@@ -37,7 +37,6 @@ nav i{font-style:normal;font-size:20px}
 .item button{background:none;border:none;color:#f66;font-size:15px}
 #toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#022;border:1px solid var(--c1);color:var(--c1);padding:9px 18px;border-radius:18px;font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:20;max-width:85%;text-align:center}
 #toast.show{opacity:1}
-/* Brain & Tools specific */
 .mind-card{background:#0d0a22;border:2px solid var(--c3);border-radius:12px;padding:12px;margin-bottom:10px;cursor:pointer;transition:.2s}
 .mind-card.active{border-color:var(--c1);box-shadow:0 0 15px var(--c1)}
 .mind-card h3{color:var(--c1);font-size:15px;margin-bottom:5px}
@@ -92,14 +91,17 @@ nav i{font-style:normal;font-size:20px}
 
 <!-- BRAIN MODAL -->
 <div class="modal" id="brain">
-  <div class="mh"><h2>🧠 BRAIN (VAYRA & AARAV)</h2><button class="x" onclick="closeM('brain')">✕</button></div>
+  <div class="mh"><h2>🧠 MIND (BRAIN)</h2><button class="x" onclick="closeM('brain')">✕</button></div>
   <p style="color:#8fe;font-size:13px;margin-bottom:12px;">Dono minds yahan se control karo. Dono milkar bhi kaam kar sakte hain.</p>
+  
   <div class="mind-card active" id="mind-vayra" onclick="toggleMind('vayra')">
-    <span class="status">🟢</span><h3>VAYRA</h3><p>Warm, caring, playful — Friday jaisi</p>
+    <span class="status">🟢</span><h3>VAYRA</h3><p>Warm, caring, playful — Friday jaisi (Ladki)</p>
   </div>
+  
   <div class="mind-card" id="mind-aarav" onclick="toggleMind('aarav')">
-    <span class="status">⚪</span><h3>AARAV</h3><p>Smart, sharp, logical — Jarvis jaisa</p>
+    <span class="status">⚪</span><h3>AARAV</h3><p>Smart, sharp, logical — Jarvis jaisa (Ladka)</p>
   </div>
+  
   <hr style="border-color:#22e6e033;margin:12px 0">
   <div class="f row"><label>🤝 Dono milkar (Together mode)</label><input type="checkbox" id="mind-together"></div>
   <button class="btn" onclick="saveMindCfg()">💾 Save Mind</button>
@@ -120,7 +122,9 @@ nav i{font-style:normal;font-size:20px}
   <div class="mh"><h2 id="it"></h2><button class="x" onclick="closeM('info')">✕</button></div>
   <div id="ib"></div>
 </div>
-<div id="toast"></div><script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<div id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const store={get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}}};
@@ -173,7 +177,8 @@ function sendInlineChat(){
 // --- Brain Logic ---
 function toggleMind(m){
   mindCfg[m]=!mindCfg[m];
-  openM('brain'); // refresh
+  store.set('v_mind',mindCfg); // Save immediately
+  openM('brain'); // Refresh UI
 }
 function saveMindCfg(){
   mindCfg.together=$('mind-together').checked;
@@ -200,8 +205,9 @@ function addToolPrompt(){
   store.set('v_tools',tools);
   renderTools();toast('Tool jod diya ✨');
 }
+function saveToolsCfg(){toast('Tools Saved ✨');closeM('tools');}
 
-// --- UI & AI Logic ---
+// --- AI Logic ---
 window.STATES=['idle','listening','thinking','speaking'];
 function setState(s){
   state=s;
@@ -218,7 +224,6 @@ const toolsLogic={
   doTool(tname, action){
     const tool=tools.find(t=>t.name.toLowerCase().includes(tname.toLowerCase()));
     if(!tool)return `Tool "${tname}" nahi mila. Tools page mein jodo.`;
-    // Webhook trigger logic
     fetch(tool.url,{method:'POST',body:JSON.stringify({action:action})}).catch(()=>{});
     return `Boss, maine ${tool.name} tool ko command bhej diya hai.`;
   }
@@ -249,13 +254,14 @@ async function ask(text){
         await new Promise(r=>setTimeout(r,300));
       }
       planIdx=plan.length;renderPlan();
-      const reply=await finalAnswer(toolResults);
-      finishTurn(reply);
+      const replyObj=await finalAnswer(toolResults);
+      finishTurn(replyObj.reply, replyObj.speaker);
       setTimeout(()=>{plan=[];renderPlan()},2000);
       return;
     }catch(e){console.log(e);}
   }
-  simpleAnswer();
+  const replyObj=await simpleAnswer();
+  finishTurn(replyObj.reply, replyObj.speaker);
 }
 
 async function callAI(messages,temp=0.7){
@@ -285,12 +291,12 @@ async function finalAnswer(toolResults){
 Known facts: ${mem.join('; ')||'none'}.
 Tools available: ${tools.map(t=>t.name).join(', ')||'none'}.
 ${toolResults.length?'Tool results:\n'+toolResults.map(t=>`${t.tool}:${t.result}`).join('\n'):''}
-Reply ONLY with JSON: {"reply":"...","emotion":"happy|sad|angry|calm|excited|love","remember":null or "fact","reminder":null or {"minutes":number,"text":"..."}}`;
+Reply ONLY with JSON: {"reply":"...","emotion":"happy|sad|angry|calm|excited|love","speaker":"vayra|aarav","remember":null or "fact","reminder":null or {"minutes":number,"text":"..."}}`;
   
   const raw=await callAI([{role:'system',content:sys},...hist.slice(-50)],0.7);
   let o;try{o=JSON.parse(raw.match(/\{[\s\S]*\}/)[0])}catch{o={reply:raw}}
   handleMeta(o);
-  return String(o.reply||raw);
+  return {reply:String(o.reply||raw), speaker:o.speaker||'vayra'};
 }
 
 async function simpleAnswer(){
@@ -302,14 +308,14 @@ async function simpleAnswer(){
 
   const sys=`${persona} Talk in natural Hindi/Hinglish like a close friend. Give helpful, complete answers — 2-5 sentences. Current time: ${new Date().toString()}.
 Known facts: ${mem.join('; ')||'none'}.
-Reply ONLY with JSON: {"reply":"...","emotion":"happy|sad|angry|calm|excited|love","remember":null or "fact","reminder":null or {"minutes":number,"text":"..."}}`;
+Reply ONLY with JSON: {"reply":"...","emotion":"happy|sad|angry|calm|excited|love","speaker":"vayra|aarav","remember":null or "fact","reminder":null or {"minutes":number,"text":"..."}}`;
   
   try{
     const raw=await callAI([{role:'system',content:sys},...hist.slice(-50)],0.7);
     let o;try{o=JSON.parse(raw.match(/\{[\s\S]*\}/)[0])}catch{o={reply:raw}}
     handleMeta(o);
-    finishTurn(String(o.reply||raw));
-  }catch(e){setState('idle');resumeListening()}
+    return {reply:String(o.reply||raw), speaker:o.speaker||'vayra'};
+  }catch(e){setState('idle');resumeListening(); return {reply:"", speaker:'vayra'}}
 }
 
 function handleMeta(o){
@@ -318,12 +324,13 @@ function handleMeta(o){
   if(o.reminder&&+o.reminder.minutes>0)addReminder(+o.reminder.minutes,String(o.reminder.text||'Yaad dilana'));
 }
 
-function finishTurn(reply){
+function finishTurn(reply, speaker){
+  if(!reply)return;
   hist.push({role:'assistant',content:reply});hist=hist.slice(-50000);store.set('v_hist',hist);
-  speak(reply);
+  speak(reply, speaker);
 }
 
-// --- Voice Recognition ---
+// --- Voice ---
 function startAlwaysListen(){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){toast('Is browser mein voice nahi hai');return}
@@ -362,22 +369,33 @@ function listenLoop(){
   try{rec.start()}catch{setTimeout(()=>listenLoop(),1000)}
 }
 
-// --- Voice Output ---
-function speak(t){
+function speak(t, speaker){
   if(!('speechSynthesis' in window)){setState('idle');resumeListening();return}
   speechSynthesis.cancel();
   const u=new SpeechSynthesisUtterance(t);
-  u.lang=cfg.lang;u.rate=1.05;u.pitch=1.15;u.volume=1.0;
+  u.lang=cfg.lang;u.volume=1.0;
+  
   const voices=speechSynthesis.getVoices();
-  const femaleVoice=voices.find(v=>v.lang===cfg.lang && (v.name.includes('female')||v.name.includes('Google')||v.name.includes('Lekha')||v.name.includes('Swara')||v.name.includes('Heera')));
-  if(femaleVoice)u.voice=femaleVoice;
-  else if(voices.length>0)u.voice=voices[0];
+  let selectedVoice = null;
+
+  if(speaker === 'aarav'){
+    u.rate = 0.95; u.pitch = 0.85;
+    selectedVoice = voices.find(v=>v.lang.includes('hi') && (v.name.includes('Male')||v.name.includes('Ravi')||v.name.includes('Hemant'))) 
+                 || voices.find(v=>v.lang.includes('en-IN') && v.name.includes('Male'));
+  } else {
+    u.rate = 1.05; u.pitch = 1.15;
+    selectedVoice = voices.find(v=>v.lang===cfg.lang && (v.name.includes('female')||v.name.includes('Google')||v.name.includes('Lekha')||v.name.includes('Swara')||v.name.includes('Heera')));
+  }
+
+  if(selectedVoice) u.voice = selectedVoice;
+  else if(voices.length > 0) u.voice = voices[0];
+
   u.onstart=()=>setState('speaking');
   u.onend=u.onerror=()=>{setState('idle');resumeListening()};
   speechSynthesis.speak(u);
 }
 
-// --- Misc (Memory, Reminders) ---
+// --- Misc ---
 function showList(title,arr,del){
   $('it').textContent=title;const b=$('ib');b.innerHTML='';
   if(!arr.length)b.textContent='Abhi kuch nahi hai...';
@@ -403,16 +421,17 @@ function schedule(r){
   setTimeout(()=>{
     if(!rem.some(x=>x.id===r.id))return;
     rem=rem.filter(x=>x.id!==r.id);store.set('v_rem',rem);
-    const t='Boss, yaad dilana: '+r.text;speak(t);
+    const t='Boss, yaad dilana: '+r.text;speak(t, 'vayra');
     if('Notification' in window&&Notification.permission==='granted')new Notification(cfg.name,{body:r.text});
   },Math.max(r.at-Date.now(),0));
 }
 rem.forEach(schedule);
 function clearChat(){hist=[];store.set('v_hist',hist);toast('Chat saaf')}
 
-// Start
 setTimeout(()=>{ if(cfg.always !== false) startAlwaysListen(); }, 500);
-</script><!-- ============ 3D ORB ============ -->
+</script>
+
+<!-- ============ 3D ORB ============ -->
 <script>
 const cv=document.getElementById('orb');
 let oState='idle';
@@ -539,7 +558,7 @@ cv.addEventListener('pointerup',()=>{
     surge();
     const reactions=['arre boss! kya hua?','hmm boss!','haan boss bolo','kya baat hai boss?','ouch boss!','bolo na boss'];
     const r=reactions[Math.floor(Math.random()*reactions.length)];
-    if(typeof speak==='function')speak(r);
+    if(typeof speak==='function')speak(r, 'vayra');
     if(typeof setEmotion==='function')setEmotion('excited');
   }
   charge=0;
