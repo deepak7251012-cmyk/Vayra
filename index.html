@@ -19,13 +19,17 @@ h1{text-align:center;font-weight:300;letter-spacing:.35em;font-size:26px;margin:
 #plan .p{padding:4px 8px;border-left:2px solid var(--c3);background:#0d0a22;border-radius:6px}
 #plan .p.done{opacity:.5;text-decoration:line-through}
 #plan .p.now{border-color:var(--c1);color:var(--c1)}
-#log{display:none}
+#chatLog{max-height:18vh;overflow-y:auto;margin:6px 0;display:flex;flex-direction:column;gap:6px;font-size:13px;padding:4px}
+#chatLog .msg{padding:6px 10px;border-radius:12px;max-width:85%;word-break:break-word;line-height:1.4}
+#chatLog .user{align-self:flex-end;background:#22e6e022;border:1px solid var(--c1);color:#fff}
+#chatLog .vayra{align-self:flex-start;background:#0d0a22;border:1px solid var(--c3);color:#dff}
+#chatLog .aarav{align-self:flex-start;background:#04141c;border:1px solid var(--c1);color:#9fe}
 nav{display:flex;justify-content:space-around;margin-top:8px}
 nav button{background:none;border:none;color:#8fe;font-size:11px;display:flex;flex-direction:column;gap:2px;align-items:center}
 nav i{font-style:normal;font-size:20px}
-.modal{display:none;position:fixed;inset:0;background:#000e;z-index:9;padding:calc(env(safe-area-inset-top,0px) + 14px) 14px 14px;flex-direction:column;overflow-y:auto}
+.modal{display:none;position:fixed;inset:0;background:#000f;z-index:9;padding:calc(env(safe-area-inset-top,0px) + 14px) 14px 14px;flex-direction:column;overflow-y:auto}
 .modal.open{display:flex}
-.mh{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.mh{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
 .mh h2{color:var(--c1);letter-spacing:.15em;font-size:17px}
 .x{background:none;border:2px solid #f44;color:#f44;border-radius:50%;width:34px;height:34px;font-size:16px}
 .f{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;font-size:13px;color:var(--c1)}
@@ -33,8 +37,6 @@ nav i{font-style:normal;font-size:20px}
 .f textarea{min-height:70px;resize:vertical}
 .f.row{flex-direction:row;align-items:center;justify-content:space-between}
 .btn{width:100%;padding:12px;margin-top:6px;background:#22e6e022;border:2px solid var(--c1);color:var(--c1);border-radius:12px;font-size:15px}
-.item{display:flex;justify-content:space-between;gap:10px;padding:10px;margin-bottom:8px;border-left:3px solid var(--c1);background:#001a24;border-radius:8px;font-size:13px}
-.item button{background:none;border:none;color:#f66;font-size:15px}
 #toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#022;border:1px solid var(--c1);color:var(--c1);padding:9px 18px;border-radius:18px;font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:20;max-width:85%;text-align:center}
 #toast.show{opacity:1}
 .mind-card{background:#0d0a22;border:2px solid var(--c3);border-radius:12px;padding:12px;margin-bottom:10px;cursor:pointer;transition:.2s}
@@ -42,10 +44,40 @@ nav i{font-style:normal;font-size:20px}
 .mind-card h3{color:var(--c1);font-size:15px;margin-bottom:5px}
 .mind-card p{color:#8fe;font-size:12px}
 .mind-card .status{float:right;font-size:18px}
-.tool-item{display:flex;justify-content:space-between;align-items:center;padding:10px;margin-bottom:8px;background:#001a24;border:1px solid #22e6e033;border-radius:8px}
-.tool-item span{color:#dff;font-size:13px}
-.tool-item button{background:#22e6e022;border:1px solid var(--c1);color:var(--c1);border-radius:6px;padding:5px 10px;font-size:12px}
-.tool-add{width:100%;padding:12px;margin-top:6px;background:#22e6e033;border:2px dashed var(--c1);color:var(--c1);border-radius:12px;font-size:15px}
+.quick-tools{display:flex;gap:6px;overflow-x:auto;padding:4px 0;margin:4px 0;font-size:11px;align-items:center}
+.quick-tools button{background:#22e6e022;border:1px solid var(--c1);color:var(--c1);border-radius:16px;padding:4px 10px;white-space:nowrap}
+.plus-btn{background:#22e6e033;border:2px solid var(--c1);color:var(--c1);border-radius:50%;width:36px;height:36px;font-size:22px;display:flex;align-items:center;justify-content:center;flex:none;cursor:pointer;margin-right:6px}
+.plus-btn:active{background:#22e6e055}
+
+#flowWrap{position:relative;height:58vh;min-height:380px;border:1px solid #22e6e044;border-radius:12px;overflow:hidden;background:radial-gradient(circle at 1px 1px,#22e6e012 1px,transparent 0);background-size:22px 22px;background-color:#010a10;touch-action:none;flex:none}
+#flowSvg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}
+#flowSvg path.edge{pointer-events:stroke;cursor:pointer;stroke-width:2.5;fill:none}
+#flowSvg path.edge:hover{stroke:#f66!important}
+#flowSvg path.temp{stroke-dasharray:6 4;stroke-width:2;fill:none;pointer-events:none}
+.fnode{position:absolute;z-index:2;min-width:128px;max-width:170px;background:#0d0a22;border:2px solid var(--c3);border-radius:10px;padding:8px 10px;cursor:grab;user-select:none;box-shadow:0 2px 10px #000a}
+.fnode:active{cursor:grabbing}
+.fnode.agent{border-color:var(--c1);background:#04141c;box-shadow:0 0 18px #22e6e055}
+.fnode.memory{border-color:#8b7cf6;background:#0a0722}
+.fnode .fh{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:12px;color:#fff;font-weight:600;pointer-events:none}
+.fnode .fh .dot{width:8px;height:8px;border-radius:50%;background:#555;flex:none}
+.fnode.running .dot{background:#ff0;box-shadow:0 0 8px #ff0}
+.fnode.ok .dot{background:#4f6;box-shadow:0 0 8px #4f6}
+.fnode.fail .dot{background:#f44;box-shadow:0 0 8px #f44}
+.fnode .fs{font-size:10px;color:#8fe;margin-top:3px;pointer-events:none;word-break:break-word}
+.fnode .fx{position:absolute;top:-9px;right:-9px;width:20px;height:20px;border-radius:50%;border:1px solid #f44;background:#200;color:#f66;font-size:11px;line-height:1;display:none}
+.fnode:hover .fx{display:block}
+.handle{position:absolute;top:50%;width:14px;height:14px;border-radius:50%;background:#0d0a22;border:2px solid var(--c1);z-index:3;touch-action:none}
+.handle.out{right:-8px;transform:translateY(-50%);cursor:crosshair}
+.handle.in{left:-8px;transform:translateY(-50%);border-color:var(--c3);cursor:crosshair}
+.handle:hover{box-shadow:0 0 10px var(--c1);background:var(--c1)}
+.flowbar{display:flex;gap:8px;margin:10px 0;flex-wrap:wrap}
+.flowbar button{flex:1;min-width:100px;padding:10px;border-radius:10px;border:1px solid var(--c1);background:#22e6e022;color:var(--c1);font-size:13px}
+.memEditor{display:none;margin-top:10px;border-top:1px dashed #8b7cf6;padding-top:10px}
+.memEditor.open{display:block}
+.memEditor textarea{width:100%;min-height:90px;background:#0a0722;border:1px solid #8b7cf6;border-radius:8px;color:#dff;padding:8px;font-size:12px}
+.memRow{display:flex;gap:6px;margin-top:6px}
+.memRow button{flex:1;padding:8px;border-radius:8px;border:1px solid var(--c1);background:#22e6e022;color:var(--c1);font-size:12px}
+.connHint{font-size:10px;color:#577;margin:4px 0}
 </style>
 </head>
 <body>
@@ -54,14 +86,18 @@ nav i{font-style:normal;font-size:20px}
   <div>DATE<b id="date">---</b>SIGNAL<b id="net">--</b></div>
 </div>
 <h1 id="title">VAYRA & AARAV</h1>
+<div class="quick-tools" id="quickTools">
+  <button class="plus-btn" onclick="openAddToolWithPerm()" title="Naya Tool Jodo">+</button>
+</div>
 <canvas id="orb"></canvas>
 <div id="state">READY 🎧</div>
+<div id="chatLog"></div>
 <div id="plan"></div>
-<div id="log"></div>
+
 <nav>
   <button onclick="openM('set')"><i>⚙️</i>Settings</button>
   <button onclick="openM('brain')"><i>🧠</i>Brain</button>
-  <button onclick="openM('tools')"><i>🔧</i>Tools</button>
+  <button onclick="openM('tools')"><i>🔧</i>Flow</button>
   <button onclick="showMem()"><i>💾</i>Memory</button>
   <button onclick="clearChat()"><i>🗑️</i>Clear</button>
 </nav>
@@ -77,13 +113,6 @@ nav i{font-style:normal;font-size:20px}
   <div class="f row"><label>🎙️ Always-Listen (mic ON)</label><input type="checkbox" id="s-always" checked></div>
   <div class="f row"><label>🧠 Smart mode</label><input type="checkbox" id="s-smart" checked></div>
   <hr style="border-color:#22e6e033;margin:12px 0">
-  <div class="f row"><label>📱 Accessibility</label><input type="checkbox" id="s-access"></div>
-  <div class="f row"><label>📸 Camera Permission</label><input type="checkbox" id="s-camera"></div>
-  <div class="f row"><label>🎤 Mic Permission</label><input type="checkbox" id="s-mic" checked></div>
-  <div class="f row"><label>📂 File Access</label><input type="checkbox" id="s-files"></div>
-  <div class="f row"><label>📞 Call Permission</label><input type="checkbox" id="s-call"></div>
-  <div class="f row"><label>💬 SMS Permission</label><input type="checkbox" id="s-sms"></div>
-  <hr style="border-color:#22e6e033;margin:12px 0">
   <div class="f"><label>💬 Chat (yahan likho)</label><input id="chat-inline" placeholder="Kuch likho..."></div>
   <button class="btn" onclick="sendInlineChat()" style="background:#22e6e033;">📩 भेजो</button>
   <button class="btn" onclick="saveCfg()">💾 Save</button>
@@ -92,30 +121,55 @@ nav i{font-style:normal;font-size:20px}
 <!-- BRAIN MODAL -->
 <div class="modal" id="brain">
   <div class="mh"><h2>🧠 MIND (BRAIN)</h2><button class="x" onclick="closeM('brain')">✕</button></div>
-  <p style="color:#8fe;font-size:13px;margin-bottom:12px;">Dono minds yahan se control karo. Dono milkar bhi kaam kar sakte hain.</p>
-  
+  <p style="color:#8fe;font-size:13px;margin-bottom:12px;">Dono minds yahan se control karo.</p>
   <div class="mind-card active" id="mind-vayra" onclick="toggleMind('vayra')">
     <span class="status">🟢</span><h3>VAYRA</h3><p>Warm, caring, playful — Friday jaisi (Ladki)</p>
   </div>
-  
+  <div class="f"><label>Vayra Personality Note</label><textarea id="vayra-note" placeholder="Extra style notes..."></textarea></div>
+  <div class="f row"><label>Vayra Pitch</label><input type="number" id="vayra-pitch" step="0.05" min="0.7" max="1.5" value="1.15"></div>
+
   <div class="mind-card" id="mind-aarav" onclick="toggleMind('aarav')">
-    <span class="status">⚪</span><h3>AARAV</h3><p>Smart, sharp, logical — Jarvis jaisa (Ladka)</p>
+    <span class="status">⚪</span><h3>AARAV</h3><p>Jarvis jaisa — deep, calm, robotic ladke ki awaaz</p>
   </div>
-  
+  <div class="f"><label>Aarav Personality Note</label><textarea id="aarav-note" placeholder="Jarvis style notes..."></textarea></div>
+  <div class="f row"><label>🤖 Jarvis Voice (deep + slow)</label><input type="checkbox" id="aarav-jarvis" checked></div>
+  <div class="f row"><label>Aarav Pitch (0.45 = Jarvis)</label><input type="number" id="aarav-pitch" step="0.05" min="0.4" max="1.0" value="0.48"></div>
+  <div class="f row"><label>Aarav Rate (0.78 = slow Jarvis)</label><input type="number" id="aarav-rate" step="0.05" min="0.6" max="1.1" value="0.78"></div>
+
   <hr style="border-color:#22e6e033;margin:12px 0">
   <div class="f row"><label>🤝 Dono milkar (Together mode)</label><input type="checkbox" id="mind-together"></div>
   <button class="btn" onclick="saveMindCfg()">💾 Save Mind</button>
 </div>
 
-<!-- TOOLS MODAL -->
+<!-- FLOW MODAL -->
 <div class="modal" id="tools">
-  <div class="mh"><h2>🔧 TOOLS</h2><button class="x" onclick="closeM('tools')">✕</button></div>
-  <p style="color:#8fe;font-size:13px;margin-bottom:12px;">Yahan tools jodo (+ dabao). Vayra aur Aarav dono use kar sakte hain.</p>
-  <div id="toolList"></div>
-  <button class="tool-add" onclick="addToolPrompt()">➕ Naya Tool Jodo</button>
-  <hr style="border-color:#22e6e033;margin:12px 0">
-  <div class="f"><label>🔗 Webhook URL (MacroDroid/Automate ke liye)</label><input id="tool-webhook" placeholder="https://..."></div>
-  <button class="btn" onclick="saveToolsCfg()">💾 Save Tools</button>
+  <div class="mh"><h2>🔧 AGENT FLOW (n8n Style)</h2><button class="x" onclick="closeM('tools')">✕</button></div>
+  <p style="color:#8fe;font-size:12px;margin-bottom:8px;">Agent ko power sirf connected tools se milegi. Output (⚡) se kheencho, tool ke input (●) pe chhodo.</p>
+  <div id="flowWrap"><svg id="flowSvg"></svg></div>
+  <p class="connHint">⚡ = Agent output &nbsp;•&nbsp; ● = Tool input &nbsp;•&nbsp; 💜 = Memory</p>
+  <div class="flowbar">
+    <button onclick="runFlow()">▶ Run Flow</button>
+    <button onclick="showAddTool()">➕ Tool Node</button>
+    <button onclick="resetFlowLayout()">🔄 Reset View</button>
+  </div>
+  <div id="addToolForm" style="display:none;border-top:1px solid #22e6e033;padding-top:10px;">
+    <div class="f"><label>Tool Name</label><input id="t-name" placeholder="WhatsApp, Lights..."></div>
+    <div class="f"><label>Description (AI ko clearly batao ye tool kya karta hai)</label><input id="t-desc" placeholder="Example: Lights on/off, Camera photo, WhatsApp message..."></div>
+    <div class="f"><label>Webhook URL</label><input id="t-url" placeholder="https://..."></div>
+    <div class="f"><label>Method</label><select id="t-method"><option value="POST">POST</option><option value="GET">GET</option></select></div>
+    <div class="f"><label>Sample Body / Actions</label><input id="t-sample" placeholder='{"action":"on"} or multiple'></div>
+    <button class="btn" onclick="saveNewTool()">Add Tool Node & Connect</button>
+    <button class="btn" onclick="hideAddTool()" style="background:#f44222;">Cancel</button>
+  </div>
+  <div class="memEditor" id="memEditor">
+    <label style="color:#8b7cf6;font-size:12px;">💜 Agent Memory</label>
+    <textarea id="flowMemTa"></textarea>
+    <div class="memRow">
+      <button onclick="saveFlowMem()">💾 Save</button>
+      <button onclick="clearFlowMem()">🗑️ Clear</button>
+    </div>
+  </div>
+  <button class="btn" onclick="closeM('tools')">✅ Done</button>
 </div>
 
 <div class="modal" id="info">
@@ -129,14 +183,14 @@ nav i{font-style:normal;font-size:20px}
 const $=id=>document.getElementById(id);
 const store={get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}}};
 
-// --- Config & State ---
-let cfg=Object.assign({key:'',name:'Vayra & Aarav',model:'meta-llama/llama-3.3-70b-instruct',lang:'hi-IN',always:true,smart:true,access:false,camera:false,mic:true,files:false,call:false,sms:false},store.get('v_cfg',{}));
-let mindCfg=Object.assign({vayra:true, aarav:false, together:false}, store.get('v_mind',{}));
-let mem=store.get('v_mem',[]),hist=store.get('v_hist',[]),rem=store.get('v_rem',[]),goals=store.get('v_goals',[]),tools=store.get('v_tools',[]);
+let cfg=Object.assign({key:'',name:'Vayra & Aarav',model:'meta-llama/llama-3.3-70b-instruct',lang:'hi-IN',always:true,smart:true},store.get('v_cfg',{}));
+let mindCfg=Object.assign({vayra:true,aarav:true,together:false,vayraNote:'',aaravNote:'',jarvis:true,vayraPitch:1.15,aaravPitch:0.48,aaravRate:0.78},store.get('v_mind',{}));
+let mem=store.get('v_mem',[]),hist=store.get('v_hist',[]),rem=store.get('v_rem',[]),goals=store.get('v_goals',[]);
+let flow=store.get('v_flow',null);
+if(!flow){flow={nodes:[{id:'mem',type:'memory',name:'MEMORY',desc:mem.length+' facts',x:20,y:20}],edges:[{from:'agent',to:'mem'}]};store.set('v_flow',flow);}
 let state='idle',emotion='happy',plan=[],planIdx=0;
 let isListening=false,busy=false,rec=null;
 
-// --- DOM Setup & Time ---
 $('title').textContent=cfg.name.toUpperCase();
 function tick(){const n=new Date();$('time').textContent=n.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});$('date').textContent=n.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}).toUpperCase()}
 tick();setInterval(tick,1000);
@@ -148,8 +202,6 @@ function openM(id){
   if(id==='set'){
     $('s-key').value=cfg.key;$('s-name').value=cfg.name;$('s-model').value=cfg.model;
     $('s-lang').value=cfg.lang;$('s-always').checked=cfg.always;$('s-smart').checked=cfg.smart;
-    $('s-access').checked=cfg.access;$('s-camera').checked=cfg.camera;$('s-mic').checked=cfg.mic;
-    $('s-files').checked=cfg.files;$('s-call').checked=cfg.call;$('s-sms').checked=cfg.sms;
   }
   if(id==='brain'){
     $('mind-vayra').classList.toggle('active',mindCfg.vayra);
@@ -157,61 +209,223 @@ function openM(id){
     $('mind-aarav').classList.toggle('active',mindCfg.aarav);
     $('mind-aarav').querySelector('.status').textContent=mindCfg.aarav?'🟢':'⚪';
     $('mind-together').checked=mindCfg.together;
+    $('vayra-note').value=mindCfg.vayraNote||'';
+    $('aarav-note').value=mindCfg.aaravNote||'';
+    $('aarav-jarvis').checked=mindCfg.jarvis!==false;
+    $('vayra-pitch').value=mindCfg.vayraPitch||1.15;
+    $('aarav-pitch').value=mindCfg.aaravPitch||0.48;
+    $('aarav-rate').value=mindCfg.aaravRate||0.78;
   }
-  if(id==='tools'){renderTools();}
+  if(id==='tools'){setTimeout(renderFlow,50);}
   $(id).classList.add('open')
 }
 function closeM(id){$(id).classList.remove('open')}
 
-// --- Settings Logic ---
 function saveCfg(){
-  cfg={key:$('s-key').value.trim(),name:$('s-name').value.trim()||'Vayra & Aarav',model:$('s-model').value.trim(),lang:$('s-lang').value,always:$('s-always').checked,smart:$('s-smart').checked,access:$('s-access').checked,camera:$('s-camera').checked,mic:$('s-mic').checked,files:$('s-files').checked,call:$('s-call').checked,sms:$('s-sms').checked};
+  cfg={key:$('s-key').value.trim(),name:$('s-name').value.trim()||'Vayra & Aarav',model:$('s-model').value.trim(),lang:$('s-lang').value,always:$('s-always').checked,smart:$('s-smart').checked};
   store.set('v_cfg',cfg);$('title').textContent=cfg.name.toUpperCase();toast('Saved ✨');closeM('set');
   if(cfg.always)startAlwaysListen();else stopAlwaysListen();
 }
-function sendInlineChat(){
-  const v=$('chat-inline').value.trim();if(!v)return;
-  $('chat-inline').value='';closeM('set');ask(v);
-}
+function sendInlineChat(){const v=$('chat-inline').value.trim();if(!v)return;$('chat-inline').value='';closeM('set');ask(v);}
 
-// --- Brain Logic ---
-function toggleMind(m){
-  mindCfg[m]=!mindCfg[m];
-  store.set('v_mind',mindCfg); // Save immediately
-  openM('brain'); // Refresh UI
-}
+function toggleMind(m){mindCfg[m]=!mindCfg[m];store.set('v_mind',mindCfg);openM('brain');}
 function saveMindCfg(){
   mindCfg.together=$('mind-together').checked;
+  mindCfg.vayraNote=$('vayra-note').value.trim();
+  mindCfg.aaravNote=$('aarav-note').value.trim();
+  mindCfg.jarvis=$('aarav-jarvis').checked;
+  mindCfg.vayraPitch=parseFloat($('vayra-pitch').value)||1.15;
+  mindCfg.aaravPitch=parseFloat($('aarav-pitch').value)||0.48;
+  mindCfg.aaravRate=parseFloat($('aarav-rate').value)||0.78;
   store.set('v_mind',mindCfg);toast('Mind Saved ✨');closeM('brain');
 }
 
-// --- Tools Logic ---
-function renderTools(){
-  const list=$('toolList');list.innerHTML='';
-  if(tools.length===0)list.innerHTML='<p style="color:#8fe;font-size:12px;margin-bottom:10px;">Koi tool nahi joda. + dabao.</p>';
-  tools.forEach((t,i)=>{
-    const div=document.createElement('div');div.className='tool-item';
-    div.innerHTML=`<span>🔧 ${t.name}</span> <button onclick="delTool(${i})">✕ Hatao</button>`;
-    list.append(div);
+// ================= FLOW =================
+const FW=$('flowWrap'),FS=$('flowSvg');
+const AGENT_ID='agent';
+function connectedTools(){return flow.edges.filter(e=>e.from===AGENT_ID).map(e=>flow.nodes.find(n=>n.id===e.to)).filter(n=>n&&n.type!=='memory');}
+function saveFlow(){store.set('v_flow',flow);renderQuickTools();}
+function nodeById(id){return id===AGENT_ID?{id:AGENT_ID,type:'agent',name:'AGENT',desc:cfg.name,x:flow.agentX??40,y:flow.agentY??150}:flow.nodes.find(n=>n.id===id);}
+function handlePos(node,side){const w=150;return {x:node.x+(side==='out'?w:0),y:node.y+22};}
+function renderFlow(){
+  FW.querySelectorAll('.fnode').forEach(n=>n.remove());FS.innerHTML='';
+  if(flow.agentX===undefined){flow.agentX=Math.max(20,(FW.clientWidth-160)/2);flow.agentY=150;}
+  const nodes=[{id:AGENT_ID,type:'agent',name:'🤖 AGENT',desc:cfg.name+'\nPower: '+connectedTools().length+' tools',x:flow.agentX,y:flow.agentY},...flow.nodes];
+  nodes.forEach(n=>{
+    const d=document.createElement('div');
+    d.className='fnode '+(n.type==='agent'?'agent':n.type==='memory'?'memory':'tool');
+    d.style.left=n.x+'px';d.style.top=n.y+'px';d.dataset.id=n.id;
+    const shortDesc=(n.desc||'').split('\n')[0];
+    d.innerHTML=`<div class="fh"><span>${n.name}</span><span class="dot"></span></div>`+(shortDesc?`<div class="fs">${shortDesc}</div>`:'')+(n.type!=='agent'?`<button class="fx">✕</button>`:'')+(n.type==='agent'?`<div class="handle out" data-side="out">⚡</div>`:'')+(n.type!=='agent'?`<div class="handle in" data-side="in">●</div>`:'');
+    FW.append(d);n._el=d;
+    if(n.type==='memory'){d.addEventListener('dblclick',toggleMemEditor);}
+  });
+  flow.edges.forEach(e=>{
+    const a=nodeById(e.from),b=nodeById(e.to);if(!a||!b)return;
+    const p1=handlePos(a,'out'),p2=handlePos(b,'in');
+    const dx=Math.max(50,Math.abs(p2.x-p1.x)*.5);
+    const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d',`M${p1.x},${p1.y} C${p1.x+dx},${p1.y} ${p2.x-dx},${p2.y} ${p2.x},${p2.y}`);
+    path.setAttribute('class','edge');path.setAttribute('stroke',e.to==='mem'?'#8b7cf6':'#22e6e0');
+    path.addEventListener('click',()=>{flow.edges=flow.edges.filter(x=>!(x.from===e.from&&x.to===e.to));saveFlow();toast('Connection hata diya');});
+    FS.append(path);
+  });
+  renderQuickTools();
+}
+function resetFlowLayout(){flow.agentX=undefined;flow.nodes.forEach((n,i)=>{n.x=20+(i%2)*170;n.y=20+Math.floor(i/2)*110;});saveFlow();renderFlow();}
+function showAddTool(){$('addToolForm').style.display='block'}
+function hideAddTool(){$('addToolForm').style.display='none'}
+function saveNewTool(){
+  const name=$('t-name').value.trim(),desc=$('t-desc').value.trim(),url=$('t-url').value.trim();
+  const method=$('t-method').value,sample=$('t-sample').value.trim();
+  if(!name||!url){toast('Name aur URL zaroori');return}
+  const id='t'+Date.now();
+  flow.nodes.push({id,type:'tool',name,desc,url,method,sample,x:20+(flow.nodes.length%2)*170,y:20+Math.floor(flow.nodes.length/2)*110});
+  flow.edges.push({from:AGENT_ID,to:id});
+  saveFlow();renderFlow();hideAddTool();
+  ['t-name','t-desc','t-url','t-sample'].forEach(i=>$(i).value='');
+  toast(name+' connected ⚡');
+}
+function delNode(id){flow.nodes=flow.nodes.filter(n=>n.id!==id);flow.edges=flow.edges.filter(e=>e.to!==id&&e.from!==id);saveFlow();renderFlow();}
+function toggleMemEditor(){const me=$('memEditor');me.classList.toggle('open');if(me.classList.contains('open'))$('flowMemTa').value=mem.join('\n');}
+function saveFlowMem(){mem=$('flowMemTa').value.split('\n').map(s=>s.trim()).filter(Boolean);store.set('v_mem',mem);const mn=flow.nodes.find(n=>n.type==='memory');if(mn)mn.desc=mem.length+' facts';saveFlow();renderFlow();toast('Memory saved 💜');}
+function clearFlowMem(){mem=[];store.set('v_mem',mem);$('flowMemTa').value='';const mn=flow.nodes.find(n=>n.type==='memory');if(mn)mn.desc='0 facts';saveFlow();renderFlow();toast('Memory saaf');}
+
+let dragNode=null,dragMoved=false,connFrom=null,tempPath=null,dragOff={x:0,y:0};
+document.addEventListener('pointermove',e=>{
+  if(dragNode){
+    const r=FW.getBoundingClientRect();
+    const nx=Math.max(0,Math.min(r.width-160,e.clientX-r.left-dragOff.x));
+    const ny=Math.max(0,Math.min(r.height-60,e.clientY-r.top-dragOff.y));
+    dragNode.style.left=nx+'px';dragNode.style.top=ny+'px';dragMoved=true;
+    const id=dragNode.dataset.id;
+    if(id===AGENT_ID){flow.agentX=nx;flow.agentY=ny;}else{const n=flow.nodes.find(x=>x.id===id);if(n){n.x=nx;n.y=ny;}}
+    redrawEdges();
+  }
+  if(connFrom&&tempPath){
+    const r=FW.getBoundingClientRect();
+    const x=e.clientX-r.left,y=e.clientY-r.top;
+    const p1=connFrom.p;
+    tempPath.setAttribute('d',`M${p1.x},${p1.y} C${p1.x+60},${p1.y} ${x-60},${y} ${x},${y}`);
+  }
+});
+document.addEventListener('pointerup',e=>{
+  if(dragNode&&dragMoved)saveFlow();
+  if(connFrom&&tempPath){
+    const el=document.elementFromPoint(e.clientX,e.clientY);
+    if(el&&el.classList&&el.classList.contains('handle')){
+      const toNode=el.closest('.fnode').dataset.id;
+      const fromNode=connFrom.id;
+      if(fromNode!==toNode&&!flow.edges.some(x=>x.from===fromNode&&x.to===toNode)){
+        flow.edges.push({from:fromNode,to:toNode});saveFlow();toast('⚡ Connected!');
+      }
+    }
+    tempPath.remove();tempPath=null;connFrom=null;
+  }
+  dragNode=null;
+});
+FW.addEventListener('pointerdown',e=>{
+  const fx=e.target.closest('.fx');
+  if(fx){delNode(fx.closest('.fnode').dataset.id);return;}
+  const h=e.target.closest('.handle');
+  if(h){
+    const id=h.closest('.fnode').dataset.id;
+    const n=nodeById(id);
+    connFrom={id,p:handlePos(n,h.dataset.side)};
+    tempPath=document.createElementNS('http://www.w3.org/2000/svg','path');
+    tempPath.setAttribute('class','temp');tempPath.setAttribute('stroke','#22e6e0');
+    FS.append(tempPath);e.preventDefault();return;
+  }
+  const node=e.target.closest('.fnode');
+  if(node){dragNode=node;dragMoved=false;const r=node.getBoundingClientRect();dragOff={x:e.clientX-r.left,y:e.clientY-r.top};e.preventDefault();}
+});
+function redrawEdges(){
+  FS.querySelectorAll('path.edge').forEach(p=>p.remove());
+  flow.edges.forEach(e=>{
+    const a=nodeById(e.from),b=nodeById(e.to);if(!a||!b)return;
+    const p1=handlePos(a,'out'),p2=handlePos(b,'in');
+    const dx=Math.max(50,Math.abs(p2.x-p1.x)*.5);
+    const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d',`M${p1.x},${p1.y} C${p1.x+dx},${p1.y} ${p2.x-dx},${p2.y} ${p2.x},${p2.y}`);
+    path.setAttribute('class','edge');path.setAttribute('stroke',e.to==='mem'?'#8b7cf6':'#22e6e0');
+    path.addEventListener('click',()=>{flow.edges=flow.edges.filter(x=>!(x.from===e.from&&x.to===e.to));saveFlow();redrawEdges();toast('Connection hata diya');});
+    FS.append(path);
   });
 }
-function delTool(i){tools.splice(i,1);store.set('v_tools',tools);renderTools();toast('Tool hataya')}
-function addToolPrompt(){
-  const name=prompt("Tool ka naam kya hai? (jaise: WhatsApp, Call, Camera)");
-  if(!name)return;
-  const url=prompt("Webhook URL daalo (MacroDroid/Automate ka link)");
-  if(!url)return;
-  tools.push({name:name,url:url});
-  store.set('v_tools',tools);
-  renderTools();toast('Tool jod diya ✨');
+
+async function runFlow(){
+  const tools=connectedTools();
+  if(!tools.length){toast('Koi tool connected nahi hai');return;}
+  setState('thinking');pauseListening();
+  const results=[];
+  for(const t of tools){
+    const el=flow.nodes.find(n=>n.id===t.id)._el;
+    el.classList.remove('ok','fail');el.classList.add('running');
+    try{
+      const r=await fetch(t.url,{method:t.method||'POST',headers:{'Content-Type':'application/json'},body:t.method==='POST'?(t.sample||'{"action":"run"}'):undefined});
+      const d=await r.text();
+      results.push({name:t.name,ok:true,d:d.slice(0,80)});
+      el.classList.remove('running');el.classList.add('ok');
+    }catch(err){results.push({name:t.name,ok:false,d:String(err)});el.classList.remove('running');el.classList.add('fail');}
+    await new Promise(r=>setTimeout(r,250));
+  }
+  const ok=results.filter(r=>r.ok).length;
+  const msg=`Boss, flow complete. ${ok}/${results.length} tools chal gaye. ⚡`;
+  toast(msg);speak(msg,'aarav');
 }
-function saveToolsCfg(){toast('Tools Saved ✨');closeM('tools');}
+
+function renderQuickTools(){
+  const qt=$('quickTools');
+  const plus=qt.querySelector('.plus-btn');
+  qt.innerHTML='';
+  if(plus)qt.append(plus);
+  else{
+    const pb=document.createElement('button');
+    pb.className='plus-btn';
+    pb.textContent='+';
+    pb.title='Naya Tool Jodo';
+    pb.onclick=openAddToolWithPerm;
+    qt.append(pb);
+  }
+  connectedTools().forEach(t=>{
+    const btn=document.createElement('button');
+    btn.textContent='🔧 '+t.name;
+    btn.onclick=()=>quickRunTool(t.name);
+    qt.append(btn);
+  });
+}
+function quickRunTool(name){
+  const t=connectedTools().find(x=>x.name.toLowerCase()===name.toLowerCase());
+  if(!t){toast('Tool connected nahi hai');return;}
+  const action=prompt('Action / body for '+name+' ?',t.sample||'{"action":"toggle"}');
+  if(action===null)return;
+  const res=toolsLogic.doTool(name,action);
+  toast(res);speak(res,'aarav');
+}
+
+// Plus button with permission request
+async function openAddToolWithPerm(){
+  toast('Permissions check ho rahi hain...');
+  try{
+    if(navigator.mediaDevices){
+      await navigator.mediaDevices.getUserMedia({audio:true,video:false}).catch(()=>{});
+    }
+    if(navigator.permissions){
+      try{await navigator.permissions.query({name:'microphone'});}catch{}
+    }
+  }catch(e){}
+  openM('tools');
+  setTimeout(()=>{showAddTool();},200);
+  toast('Ab tool details bharo aur connect karo ⚡');
+}
 
 // --- AI Logic ---
 window.STATES=['idle','listening','thinking','speaking'];
 function setState(s){
   state=s;
-  $('state').textContent=(cfg.always&&s==='idle')?'READY 🎧':s.toUpperCase();
+  let txt=(cfg.always&&s==='idle')?'READY 🎧':s.toUpperCase();
+  if(s==='listening')txt='LISTENING 🎧 (Vayra + Aarav)';
+  $('state').textContent=txt;
   if(typeof window.setOrbState==='function')window.setOrbState(s);
 }
 function setEmotion(e){emotion=e;if(typeof window.setOrbEmotion==='function')window.setOrbEmotion(e)}
@@ -219,24 +433,35 @@ function setEmotion(e){emotion=e;if(typeof window.setOrbEmotion==='function')win
 const toolsLogic={
   time(){const n=new Date();return `Abhi ${n.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})} hai.`},
   date(){return new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'})},
-  remember(f){if(f&&!mem.includes(f)){mem.push(String(f));mem=mem.slice(-50000);store.set('v_mem',mem);return `Yaad rakh liya: ${f}`}return 'Pehle se yaad hai'},
+  remember(f){if(f&&!mem.includes(f)){mem.push(String(f));store.set('v_mem',mem);return `Yaad rakh liya: ${f}`}return 'Pehle se yaad hai'},
   recall(){return mem.length?'Yaad hai: '+mem.join('; '):'Kuch yaad nahi'},
-  doTool(tname, action){
-    const tool=tools.find(t=>t.name.toLowerCase().includes(tname.toLowerCase()));
-    if(!tool)return `Tool "${tname}" nahi mila. Tools page mein jodo.`;
-    fetch(tool.url,{method:'POST',body:JSON.stringify({action:action})}).catch(()=>{});
-    return `Boss, maine ${tool.name} tool ko command bhej diya hai.`;
+  doTool(tname,action){
+    const tool=connectedTools().find(t=>t.name.toLowerCase().includes(String(tname).toLowerCase()));
+    if(!tool)return `Boss, "${tname}" tool connected nahi hai. Home screen + dabao aur jodo.`;
+    const body=action||tool.sample||'{"action":"run"}';
+    fetch(tool.url,{method:tool.method||'POST',headers:{'Content-Type':'application/json'},body:tool.method==='POST'?body:undefined}).catch(()=>{});
+    return `Boss, ${tool.name} ko command bhej diya. ⚡`;
   }
 };
 function runTool(name,args){const fn=toolsLogic[name];if(!fn)return `Tool "${name}" nahi hai.`;try{return fn(...args)}catch(e){return 'Tool error: '+e.message}}
 
 function renderPlan(){const p=$('plan');if(!plan.length){p.style.display='none';return}p.style.display='flex';p.innerHTML='';plan.forEach((s,i)=>{const d=document.createElement('div');d.className='p'+(i<planIdx?' done':i===planIdx?' now':'');d.textContent=(i<planIdx?'✓ ':i===planIdx?'▶ ':'')+s;p.append(d)});p.scrollTop=1e9}
 
+function addChatMsg(role,text,speaker){
+  const log=$('chatLog');
+  const div=document.createElement('div');
+  div.className='msg '+(role==='user'?'user':(speaker==='aarav'?'aarav':'vayra'));
+  const prefix=role==='user'?'You: ':(speaker==='aarav'?'Aarav: ':'Vayra: ');
+  div.textContent=prefix+text;
+  log.append(div);
+  log.scrollTop=log.scrollHeight;
+}
+
 async function ask(text){
   text=text.trim();if(!text)return;
   if(!cfg.key){toast('Pehle Settings mein API key daalo');openM('set');return}
-  setState('thinking');
-  pauseListening();
+  addChatMsg('user',text);
+  setState('thinking');pauseListening();
   hist.push({role:'user',content:text});hist=hist.slice(-50000);
 
   if(cfg.smart){
@@ -255,13 +480,13 @@ async function ask(text){
       }
       planIdx=plan.length;renderPlan();
       const replyObj=await finalAnswer(toolResults);
-      finishTurn(replyObj.reply, replyObj.speaker);
+      finishTurn(replyObj.reply,replyObj.speaker);
       setTimeout(()=>{plan=[];renderPlan()},2000);
       return;
     }catch(e){console.log(e);}
   }
   const replyObj=await simpleAnswer();
-  finishTurn(replyObj.reply, replyObj.speaker);
+  finishTurn(replyObj.reply,replyObj.speaker);
 }
 
 async function callAI(messages,temp=0.7){
@@ -271,80 +496,108 @@ async function callAI(messages,temp=0.7){
   return d.choices[0].message.content;
 }
 
+function personaText(){
+  let activeMinds=[];
+  if(mindCfg.vayra)activeMinds.push(`VAYRA (Friday jaisi, warm, caring, playful, ladki. Use emojis naturally 😊💖✨). ${mindCfg.vayraNote||''}`);
+  if(mindCfg.aarav)activeMinds.push(`AARAV (Jarvis jaisa, deep calm robotic ladke ki awaaz, logical, says "Boss", uses emojis sparingly ⚡🤖). ${mindCfg.aaravNote||''}`);
+  let p=activeMinds.length?`You are a team of AIs: ${activeMinds.join(' and ')}. Both of you are listening to the user together.`:'You are a helpful AI.';
+  if(mindCfg.together)p+=' You both talk together and give combined answers with emojis.';
+  return p;
+}
+function connectedToolsDesc(){
+  const t=connectedTools();
+  if(!t.length)return 'NONE connected';
+  return t.map(x=>`${x.name}: ${x.desc||'tool'} (use when user needs this function)`).join('; ');
+}
+function knownFacts(){return mem.join('; ')||'none';}
+
 async function makePlan(userText){
   const sys=`You are the planning brain. Given user message, output a plan.
-Available tools: time, date, remember(fact), recall, doTool(toolname|action).
-Simple chat → ["answer"]. Tool helps → include "tool:time" etc. Max 3 steps. Use | for args.
+The agent can ONLY use these CONNECTED tools (choose the right one based on description): ${connectedToolsDesc()}.
+Built-ins: time, date, remember(fact), recall, doTool(toolname|action).
+Simple chat -> ["answer"]. Tool helps -> include "tool:time" or "tool:doTool|ToolName|action" etc. Max 3 steps. Use | for args.
 Reply ONLY with a JSON array of strings, no other text.`;
   const raw=await callAI([{role:'system',content:sys},{role:'user',content:userText}],0.3);
   try{return JSON.parse(raw.match(/\[[\s\S]*\]/)[0])}catch{return ['answer']}
 }
 
-async function finalAnswer(toolResults){
-  let activeMinds=[];
-  if(mindCfg.vayra)activeMinds.push("VAYRA (Friday jaisi, warm, caring, daughter like)");
-  if(mindCfg.aarav)activeMinds.push("AARAV (Jarvis jaisa, smart, logical, brother like)");
-  let persona = activeMinds.length ? `You are a team of AIs: ${activeMinds.join(" and ")}.` : "You are a helpful AI.";
-  if(mindCfg.together) persona += " You both talk together and give combined answers.";
-
-  const sys=`${persona} Talk in natural Hindi/Hinglish like a close friend. Give helpful, complete answers — 2-5 sentences. Current time: ${new Date().toString()}.
-Known facts: ${mem.join('; ')||'none'}.
-Tools available: ${tools.map(t=>t.name).join(', ')||'none'}.
+function replySys(toolResults){
+  return `${personaText()} Talk in natural Hindi/Hinglish like a close friend. Use emojis naturally in replies (😊💖✨⚡ etc). Give helpful, complete answers — 2-5 sentences. Current time: ${new Date().toString()}.
+Known facts: ${knownFacts()}.
+Connected tools (choose wisely based on description): ${connectedToolsDesc()}.
 ${toolResults.length?'Tool results:\n'+toolResults.map(t=>`${t.tool}:${t.result}`).join('\n'):''}
 Reply ONLY with JSON: {"reply":"...","emotion":"happy|sad|angry|calm|excited|love","speaker":"vayra|aarav","remember":null or "fact","reminder":null or {"minutes":number,"text":"..."}}`;
-  
-  const raw=await callAI([{role:'system',content:sys},...hist.slice(-50)],0.7);
+}
+
+async function finalAnswer(toolResults){
+  const raw=await callAI([{role:'system',content:replySys(toolResults)},...hist.slice(-50)],0.75);
   let o;try{o=JSON.parse(raw.match(/\{[\s\S]*\}/)[0])}catch{o={reply:raw}}
   handleMeta(o);
-  return {reply:String(o.reply||raw), speaker:o.speaker||'vayra'};
+  return {reply:String(o.reply||raw),speaker:o.speaker||'vayra'};
 }
 
 async function simpleAnswer(){
-  let activeMinds=[];
-  if(mindCfg.vayra)activeMinds.push("VAYRA (Friday jaisi, warm, caring, daughter like)");
-  if(mindCfg.aarav)activeMinds.push("AARAV (Jarvis jaisa, smart, logical, brother like)");
-  let persona = activeMinds.length ? `You are a team of AIs: ${activeMinds.join(" and ")}.` : "You are a helpful AI.";
-  if(mindCfg.together) persona += " You both talk together and give combined answers.";
-
-  const sys=`${persona} Talk in natural Hindi/Hinglish like a close friend. Give helpful, complete answers — 2-5 sentences. Current time: ${new Date().toString()}.
-Known facts: ${mem.join('; ')||'none'}.
-Reply ONLY with JSON: {"reply":"...","emotion":"happy|sad|angry|calm|excited|love","speaker":"vayra|aarav","remember":null or "fact","reminder":null or {"minutes":number,"text":"..."}}`;
-  
   try{
-    const raw=await callAI([{role:'system',content:sys},...hist.slice(-50)],0.7);
+    const raw=await callAI([{role:'system',content:replySys([])},...hist.slice(-50)],0.75);
     let o;try{o=JSON.parse(raw.match(/\{[\s\S]*\}/)[0])}catch{o={reply:raw}}
     handleMeta(o);
-    return {reply:String(o.reply||raw), speaker:o.speaker||'vayra'};
-  }catch(e){setState('idle');resumeListening(); return {reply:"", speaker:'vayra'}}
+    return {reply:String(o.reply||raw),speaker:o.speaker||'vayra'};
+  }catch(e){setState('idle');resumeListening();return{reply:'',speaker:'vayra'};}
 }
 
 function handleMeta(o){
   if(o.emotion)setEmotion(o.emotion);
-  if(o.remember&&!mem.includes(o.remember)){mem.push(String(o.remember));mem=mem.slice(-50000);store.set('v_mem',mem)}
+  if(o.remember&&!mem.includes(o.remember)){mem.push(String(o.remember));store.set('v_mem',mem);}
   if(o.reminder&&+o.reminder.minutes>0)addReminder(+o.reminder.minutes,String(o.reminder.text||'Yaad dilana'));
 }
 
-function finishTurn(reply, speaker){
+function finishTurn(reply,speaker){
   if(!reply)return;
   hist.push({role:'assistant',content:reply});hist=hist.slice(-50000);store.set('v_hist',hist);
-  speak(reply, speaker);
+  addChatMsg('assistant',reply,speaker);
+  speak(reply,speaker);
 }
 
-// --- Voice ---
+// ================= VOICE (Strong Jarvis for Aarav) =================
+function speak(t,speaker){
+  if(!('speechSynthesis' in window)){setState('idle');resumeListening();return}
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(t);
+  u.lang=cfg.lang;u.volume=1.0;
+  const voices=speechSynthesis.getVoices();
+  let selectedVoice=null;
+
+  if(speaker==='aarav'){
+    const jarvis=mindCfg.jarvis!==false;
+    u.rate=mindCfg.aaravRate||0.78;
+    u.pitch=jarvis?Math.min(mindCfg.aaravPitch||0.48,0.55):(mindCfg.aaravPitch||0.48);
+    selectedVoice=
+      voices.find(v=>/^en/i.test(v.lang)&&(v.name.includes('Google UK English Male')||v.name.includes('Daniel')||v.name.includes('David')||v.name.includes('George')||v.name.toLowerCase().includes('male')))||
+      voices.find(v=>/^en/i.test(v.lang)&&v.lang.includes('GB'))||
+      voices.find(v=>v.name.toLowerCase().includes('male'))||
+      voices.find(v=>/^en/i.test(v.lang));
+  } else {
+    u.rate=1.05;u.pitch=mindCfg.vayraPitch||1.15;
+    selectedVoice=
+      voices.find(v=>v.lang===cfg.lang&&(v.name.toLowerCase().includes('female')||v.name.includes('Lekha')||v.name.includes('Swara')||v.name.includes('Heera')||v.name.includes('Google')))||
+      voices.find(v=>v.name.toLowerCase().includes('female'));
+  }
+  if(selectedVoice)u.voice=selectedVoice;else if(voices.length>0)u.voice=voices[0];
+
+  u.onstart=()=>setState('speaking');
+  u.onend=u.onerror=()=>{setState('idle');resumeListening()};
+  speechSynthesis.speak(u);
+}
+if('speechSynthesis' in window)speechSynthesis.onvoiceschanged=()=>{};
+
 function startAlwaysListen(){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){toast('Is browser mein voice nahi hai');return}
-  isListening=true;busy=false;
-  listenLoop();
+  isListening=true;busy=false;listenLoop();
 }
-function stopAlwaysListen(){
-  isListening=false;
-  if(rec){try{rec.abort()}catch{}rec=null}
-  busy=false;
-  setState('idle');
-}
-function pauseListening(){busy=true;if(rec){try{rec.abort()}catch{}rec=null}}
-function resumeListening(){busy=false;if(isListening&&cfg.always)setTimeout(()=>listenLoop(),400)}
+function stopAlwaysListen(){isListening=false;if(rec){try{rec.abort()}catch{}}rec=null;busy=false;setState('idle');}
+function pauseListening(){busy=true;if(rec){try{rec.abort()}catch{}}rec=null;}
+function resumeListening(){busy=false;if(isListening&&cfg.always)setTimeout(()=>listenLoop(),400);}
 
 function listenLoop(){
   if(!isListening||busy)return;
@@ -352,50 +605,18 @@ function listenLoop(){
   if(!SR)return;
   if(rec){try{rec.abort()}catch{}}
   rec=new SR();
-  rec.lang=cfg.lang;
-  rec.continuous=true;
-  rec.interimResults=true;
-  rec.maxAlternatives=1;
+  rec.lang=cfg.lang;rec.continuous=true;rec.interimResults=true;rec.maxAlternatives=1;
   rec.onstart=()=>{setState('listening')};
   rec.onresult=e=>{
     let finalText='';
-    for(let i=e.resultIndex;i<e.results.length;i++){
-      if(e.results[i].isFinal) finalText+=e.results[i][0].transcript;
-    }
-    if(finalText.trim()){ask(finalText.trim());}
+    for(let i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)finalText+=e.results[i][0].transcript;}
+    if(finalText.trim())ask(finalText.trim());
   };
-  rec.onerror=(ev)=>{if(ev.error==='no-speech'||ev.error==='aborted'){return}setTimeout(()=>{if(isListening&&!busy)listenLoop()},1000);};
-  rec.onend=()=>{if(isListening&&!busy){setTimeout(()=>listenLoop(),300);}};
-  try{rec.start()}catch{setTimeout(()=>listenLoop(),1000)}
+  rec.onerror=()=>{setTimeout(()=>{if(isListening&&!busy)listenLoop()},1000);};
+  rec.onend=()=>{if(isListening&&!busy)setTimeout(()=>listenLoop(),300);};
+  try{rec.start()}catch{setTimeout(listenLoop,1000)}
 }
 
-function speak(t, speaker){
-  if(!('speechSynthesis' in window)){setState('idle');resumeListening();return}
-  speechSynthesis.cancel();
-  const u=new SpeechSynthesisUtterance(t);
-  u.lang=cfg.lang;u.volume=1.0;
-  
-  const voices=speechSynthesis.getVoices();
-  let selectedVoice = null;
-
-  if(speaker === 'aarav'){
-    u.rate = 0.95; u.pitch = 0.85;
-    selectedVoice = voices.find(v=>v.lang.includes('hi') && (v.name.includes('Male')||v.name.includes('Ravi')||v.name.includes('Hemant'))) 
-                 || voices.find(v=>v.lang.includes('en-IN') && v.name.includes('Male'));
-  } else {
-    u.rate = 1.05; u.pitch = 1.15;
-    selectedVoice = voices.find(v=>v.lang===cfg.lang && (v.name.includes('female')||v.name.includes('Google')||v.name.includes('Lekha')||v.name.includes('Swara')||v.name.includes('Heera')));
-  }
-
-  if(selectedVoice) u.voice = selectedVoice;
-  else if(voices.length > 0) u.voice = voices[0];
-
-  u.onstart=()=>setState('speaking');
-  u.onend=u.onerror=()=>{setState('idle');resumeListening()};
-  speechSynthesis.speak(u);
-}
-
-// --- Misc ---
 function showList(title,arr,del){
   $('it').textContent=title;const b=$('ib');b.innerHTML='';
   if(!arr.length)b.textContent='Abhi kuch nahi hai...';
@@ -421,17 +642,18 @@ function schedule(r){
   setTimeout(()=>{
     if(!rem.some(x=>x.id===r.id))return;
     rem=rem.filter(x=>x.id!==r.id);store.set('v_rem',rem);
-    const t='Boss, yaad dilana: '+r.text;speak(t, 'vayra');
+    const t='Boss, yaad dilana: '+r.text;speak(t,'vayra');
     if('Notification' in window&&Notification.permission==='granted')new Notification(cfg.name,{body:r.text});
   },Math.max(r.at-Date.now(),0));
 }
 rem.forEach(schedule);
-function clearChat(){hist=[];store.set('v_hist',hist);toast('Chat saaf')}
+function clearChat(){hist=[];store.set('v_hist',hist);$('chatLog').innerHTML='';toast('Chat saaf')}
 
-setTimeout(()=>{ if(cfg.always !== false) startAlwaysListen(); }, 500);
+setTimeout(()=>{if(cfg.always!==false)startAlwaysListen();},500);
+renderQuickTools();
 </script>
 
-<!-- ============ 3D ORB ============ -->
+<!-- 3D ORB (enhanced reaction) -->
 <script>
 const cv=document.getElementById('orb');
 let oState='idle';
@@ -449,12 +671,7 @@ const cur=EMO.happy.map(V),tgt=EMO.happy.map(V);
 function pal(x,o){x=(((x%1)+1)%1)*4;const i=Math.floor(x),f=x-i;return o.copy(cur[i%4]).lerp(cur[(i+1)%4],f)}
 
 function setOrbState(s){if(window.STATES.includes(s))oState=s}
-function setOrbEmotion(e){
-  if(EMO[e]){
-    EMO[e].forEach((c,i)=>tgt[i].copy(V(c)));
-    EMO[e].forEach((c,i)=>cur[i].copy(V(c)));
-  }
-}
+function setOrbEmotion(e){if(EMO[e]){EMO[e].forEach((c,i)=>{tgt[i].copy(V(c));cur[i].copy(V(c));});}}
 window.setOrbState=setOrbState;window.setOrbEmotion=setOrbEmotion;
 
 const U={time:{value:0},energy:{value:0},c:{value:cur}};
@@ -556,31 +773,21 @@ cv.addEventListener('pointerup',()=>{
   if(charge>.3){surge();addWave()}
   else if(!moved){
     surge();
-    const reactions=['arre boss! kya hua?','hmm boss!','haan boss bolo','kya baat hai boss?','ouch boss!','bolo na boss'];
+    const reactions=['arre boss! kya hua? 😊','hmm boss!','haan boss bolo ✨','kya baat hai boss?','ouch boss!','bolo na boss 💖'];
     const r=reactions[Math.floor(Math.random()*reactions.length)];
-    if(typeof speak==='function')speak(r, 'vayra');
+    if(typeof speak==='function')speak(r,'vayra');
     if(typeof setEmotion==='function')setEmotion('excited');
   }
   charge=0;
 });
 
 let initialDist=0,initialScale=1;
-cv.addEventListener('touchstart',e=>{
-  if(e.touches.length===2){
-    initialDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
-    initialScale=group.scale.x;
-  }
-},{passive:true});
+cv.addEventListener('touchstart',e=>{if(e.touches.length===2){initialDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);initialScale=group.scale.x;}},{passive:true});
 cv.addEventListener('touchmove',e=>{
   if(e.touches.length===2&&initialDist>0){
     const dist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
     const scale=Math.max(0.15,Math.min(10,initialScale*(dist/initialDist)));
     group.scale.setScalar(scale);
-    group.children.forEach(c=>{
-      if(c.material && c.material.uniforms && c.material.uniforms.level) {
-        c.material.uniforms.level.value=Math.min(1,scale*0.3);
-      }
-    });
     e.preventDefault();
   }
 },{passive:false});
@@ -592,48 +799,47 @@ function frame(){
   const dt=.016;t+=dt;
 
   let tl=0,te=.1,ts=0;
-  if(oState==='speaking'){tl=.4+.6*Math.abs(Math.sin(t*9)*Math.sin(t*5.3+1));te=.8;ts=1.5;if(Math.random()<.05)addWave()}
-  else if(oState==='listening'){tl=.25+.15*Math.sin(t*4);te=.4;ts=.6}
-  else if(oState==='thinking'){tl=.15+.05*Math.sin(t*6);te=.3;ts=.3;if(Math.random()<.02)addWave()}
-  level+=(tl-level)*.15;energy+=(te-energy)*.05;centerSpeed+=(ts-centerSpeed)*.03;centerRot+=centerSpeed*dt;
+  if(oState==='speaking'){tl=.5+.7*Math.abs(Math.sin(t*9)*Math.sin(t*5.3+1));te=1.0;ts=2.0;if(Math.random()<.08)addWave()}
+  else if(oState==='listening'){tl=.4+.3*Math.sin(t*5);te=.7;ts=1.2;if(Math.random()<.04)addWave()}
+  else if(oState==='thinking'){tl=.2+.1*Math.sin(t*6);te=.45;ts=.5;if(Math.random()<.03)addWave()}
+  level+=(tl-level)*.18;energy+=(te-energy)*.06;centerSpeed+=(ts-centerSpeed)*.04;centerRot+=centerSpeed*dt;
   burst*=.985;shake*=.9;
   if(down&&!moved){charge=Math.min(1,charge+.012);burst=Math.max(burst,.45+charge*.5)}
   if(oState==='idle'&&!down&&t>nextIdle){burst=Math.max(burst,.55);nextIdle=t+6+Math.random()*5}
-  const E=Math.min(1,energy+burst),sp=1+E*3;tt+=dt*sp;
+  const E=Math.min(1,energy+burst),sp=1+E*3.5;tt+=dt*sp;
   for(let i=0;i<4;i++)cur[i].lerp(tgt[i],.15);
   U.time.value=tt;U.energy.value=E;
 
-  if(!down){vy*=.95;vx*=.95;group.rotation.y+=vy+.0025;group.rotation.x+=vx;group.rotation.x*=.995}
-  group.position.y=Math.sin(t*.8)*.08;
-  camera.position.x=(Math.random()-.5)*shake*.18;camera.position.y=(Math.random()-.5)*shake*.18;
+  if(!down){vy*=.95;vx*=.95;group.rotation.y+=vy+.003;group.rotation.x+=vx;group.rotation.x*=.995}
+  group.position.y=Math.sin(t*.9)*.12 + (oState==='listening'||oState==='speaking'?Math.sin(t*8)*.08:0);
+  camera.position.x=(Math.random()-.5)*shake*.25;camera.position.y=(Math.random()-.5)*shake*.25;
 
-  const pulse=1+Math.sin(t*3)*.1*E;
-  LV.value=level;MD.value=oState==='listening'?-1:oState==='speaking'?1:.4;
-  orbS.rotation.y=t*.3*(1+E*2);orbS.rotation.x=Math.sin(t*.2)*.15;orbS.scale.setScalar(1+charge*.22);
-  if(group.scale.x>2){LV.value=Math.min(1,group.scale.x*0.3)}
-  nuc.scale.setScalar(1+level*.5+.05*Math.sin(t*3)+charge*.4);nuc.rotation.y=t*.8;
+  const pulse=1+Math.sin(t*3)*.15*E;
+  LV.value=level;MD.value=oState==='listening'?-1.2:oState==='speaking'?1.3:.4;
+  orbS.rotation.y=t*.35*(1+E*2.2);orbS.rotation.x=Math.sin(t*.25)*.18;orbS.scale.setScalar(1+charge*.25);
+  nuc.scale.setScalar(1+level*.6+.06*Math.sin(t*3)+charge*.5);nuc.rotation.y=t*.9;
   const pc=pal(.1,tc).clone();
 
-  elec.forEach((e,i)=>{e.a+=e.v*.03*sp;e.g.rotation.y+=.003*sp;const pa=e.pts.geometry.attributes.position,ca=e.pts.geometry.attributes.color;
+  elec.forEach((e,i)=>{e.a+=e.v*.035*sp;e.g.rotation.y+=.004*sp;const pa=e.pts.geometry.attributes.position,ca=e.pts.geometry.attributes.color;
     for(let q=0;q<8;q++){const a=e.a-Math.sign(e.v)*q*.09;pa.setXYZ(q,Math.cos(a)*e.r,Math.sin(a)*e.r,0);pal(i*.2+.3,tc).multiplyScalar((1-q/8)*.9);ca.setXYZ(q,tc.x,tc.y,tc.z)}
     pa.needsUpdate=true;ca.needsUpdate=true});
 
   const sy=Math.sin(t*1.6)*1.2,sr=Math.sqrt(Math.max(.01,1.5625-sy*sy))*1.02,so=scan.material.opacity;
-  scan.position.y=sy;scan.scale.set(sr,sr,1);scan.material.opacity=so+((oState==='thinking'?.75:0)-so)*.1;scan.material.color.setRGB(pc.x,pc.y,pc.z);
+  scan.position.y=sy;scan.scale.set(sr,sr,1);scan.material.opacity=so+((oState==='thinking'?.85:0)-so)*.1;scan.material.color.setRGB(pc.x,pc.y,pc.z);
 
   const act=centerSpeed>.05?.9:.25;
-  dRings.forEach((m,i)=>{m.rotation.z=centerRot*[1,-1.3,1.7,-2.2][i];m.scale.setScalar(1+level*.1*(1+i*.2));const u=m.material.uniforms.op;u.value+=(act-u.value)*.08});
+  dRings.forEach((m,i)=>{m.rotation.z=centerRot*[1,-1.3,1.7,-2.2][i];m.scale.setScalar(1+level*.12*(1+i*.2));const u=m.material.uniforms.op;u.value+=(act-u.value)*.08});
 
-  glowC.material.color.setRGB(pc.x,pc.y,pc.z);glowC.material.opacity=.3+E*.3;glowC.scale.setScalar(1.1*pulse*(1+level*.3));
-  glowB.material.color.setRGB(pc.x,pc.y,pc.z);glowB.material.opacity=.12+level*.2;
+  glowC.material.color.setRGB(pc.x,pc.y,pc.z);glowC.material.opacity=.35+E*.4;glowC.scale.setScalar(1.15*pulse*(1+level*.4));
+  glowB.material.color.setRGB(pc.x,pc.y,pc.z);glowB.material.opacity=.15+level*.25;
 
-  const k=.15+centerSpeed*.6+E;
+  const k=.18+centerSpeed*.7+E;
   for(const m of rings){
     const u=m.userData;
     m.rotation.x+=u.v[0]*dt*k;m.rotation.y+=u.v[1]*dt*k;m.rotation.z+=u.v[2]*dt*k;
-    m.scale.setScalar(1+.025*Math.sin(t*2+u.r)+E*.06);
+    m.scale.setScalar(1+.03*Math.sin(t*2+u.r)+E*.08);
     const pa=u.pts.geometry.attributes.position,ca=u.pts.geometry.attributes.color;let j=0;
-    u.sp.forEach((s,si)=>{s.a+=s.v*.03*sp;for(let q=0;q<6;q++){const a=s.a-Math.sign(s.v)*q*.06;pa.setXYZ(j,Math.cos(a)*u.r,Math.sin(a)*u.r,0);pal(si/4+u.r*.1,tc).multiplyScalar((1-q/6)*.9);ca.setXYZ(j,tc.x,tc.y,tc.z);j++}});
+    u.sp.forEach((s,si)=>{s.a+=s.v*.035*sp;for(let q=0;q<6;q++){const a=s.a-Math.sign(s.v)*q*.06;pa.setXYZ(j,Math.cos(a)*u.r,Math.sin(a)*u.r,0);pal(si/4+u.r*.1,tc).multiplyScalar((1-q/6)*.9);ca.setXYZ(j,tc.x,tc.y,tc.z);j++}});
     pa.needsUpdate=true;ca.needsUpdate=true;
   }
 
@@ -647,9 +853,9 @@ function frame(){
   }
   stream.obj.geometry.attributes.position.needsUpdate=true;stream.obj.geometry.attributes.color.needsUpdate=true;
 
-  for(let i=waves.length-1;i>=0;i--){const w=waves[i];w.scale.addScalar(.09*(1+E));const al=1-w.scale.x/9;
+  for(let i=waves.length-1;i>=0;i--){const w=waves[i];w.scale.addScalar(.1*(1+E));const al=1-w.scale.x/9;
     if(al<=0){group.remove(w);w.geometry.dispose();w.material.dispose();waves.splice(i,1);continue}
-    w.material.opacity=al*.45;{const q=pal(w.scale.x*.08,tc);w.material.color.setRGB(q.x,q.y,q.z)}}
+    w.material.opacity=al*.5;{const q=pal(w.scale.x*.08,tc);w.material.color.setRGB(q.x,q.y,q.z)}}
 
   renderer.render(scene,camera);
 }
